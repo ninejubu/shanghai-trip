@@ -360,8 +360,9 @@ let realMap = null, realMarkers = [], realRoute = null;
 function initRealMap() {
   const center = [DATA.trip.hotel.lat, DATA.trip.hotel.lng];
   realMap = L.map('realMap', { zoomControl: false }).setView(center, 14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 18
+  L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en', {
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: '© Google', maxZoom: 18
   }).addTo(realMap);
   L.control.zoom({ position: 'bottomright' }).addTo(realMap);
   // hotel marker
