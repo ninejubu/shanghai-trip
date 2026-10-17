@@ -422,6 +422,7 @@ let vb = { x: DEFAULT_VB.x, y: DEFAULT_VB.y, w: DEFAULT_VB.w, h: DEFAULT_VB.h };
 function setViewBox() {
   svg.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h);
 }
+setViewBox(); // apply default (one zoom-in step) on load
 function zoomIn() {
   const nw = vb.w * 0.7, nh = vb.h * 0.7;
   vb.x += (vb.w - nw) / 2; vb.y += (vb.h - nh) / 2;
