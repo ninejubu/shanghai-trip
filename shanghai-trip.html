@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shanghai Trip · 11–15 November</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg: #fdf8f0; --card: #ffffff; --ink: #2b2320; --muted: #8a7a70;
+  --accent: #e04a2f; --border: #f0e4d8;
+  --d1: #e0409a; --d2: #2f8f6b; --d3: #e07b2f; --d4: #5b7fb5; --d5: #9b59b6;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 24px 16px 48px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+header { text-align: center; margin-bottom: 20px; }
+.badge {
+  display: inline-block; background: var(--accent); color: #fff;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.4px;
+  padding: 6px 16px; border-radius: 999px; margin-bottom: 10px;
+}
+h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent); line-height: 1.1; }
+.subtitle { color: var(--muted); font-size: 14px; margin-top: 8px; max-width: 660px; margin-left: auto; margin-right: auto; }
+
+.tabs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 22px 0 18px; align-items: center; }
+.toggle-eat {
+  border: 2px solid var(--border); background: var(--card); color: var(--muted);
+  font-weight: 600; font-size: 11px; padding: 7px 14px;
+  border-radius: 999px; cursor: pointer; transition: all .15s ease; font-family: inherit;
+  margin-left: 12px;
+}
+.toggle-eat.active { background: #e07b2f; color: #fff; border-color: #e07b2f; }
+.tab {
+  border: 2px solid var(--border); background: var(--card); color: var(--muted);
+  font-weight: 700; font-size: 13px; letter-spacing: 0.5px; padding: 9px 18px;
+  border-radius: 999px; cursor: pointer; transition: all .15s ease; font-family: inherit;
+}
+.tab small { display: block; font-weight: 500; font-size: 10px; color: var(--muted); letter-spacing: 0; }
+.tab.active { color: #fff; border-color: transparent; }
+.tab.active[data-id="1"] { background: var(--d1); }
+.tab.active[data-id="2"] { background: var(--d2); }
+.tab.active[data-id="3"] { background: var(--d3); }
+.tab.active[data-id="4"] { background: var(--d4); }
+.tab.active[data-id="5"] { background: var(--d5); }
+.tab.active small { color: rgba(255,255,255,0.85); }
+.tab:hover:not(.active) { background: #f5efe6; }
+
+.main { display: grid; grid-template-columns: 420px 1fr; gap: 14px; align-items: stretch; }
+@media (max-width: 900px) { .main { grid-template-columns: 1fr; } .mapbox { order: -1; } }
+
+.timeline { display: flex; flex-direction: column; gap: 8px; max-height: 680px; overflow-y: auto; padding: 2px; }
+.stop {
+  background: var(--card); border: 2px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; cursor: pointer; transition: all .15s ease;
+}
+.stop:hover { border-color: #d4c8b8; }
+.stop .row1 { display: flex; align-items: center; gap: 8px; }
+.stop .num {
+  flex: 0 0 auto; width: 22px; height: 22px; border-radius: 6px;
+  background: #6b7280; color: #fff; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.stop .time { font-size: 12px; font-weight: 700; color: #7a4a50; white-space: nowrap; }
+.stop .obj {
+  margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
+  padding: 3px 8px; border-radius: 999px; color: #fff; white-space: nowrap;
+}
+.obj.Eat { background: #e07b2f; }
+.obj.Shopping { background: #9b59b6; }
+.obj.Sightseeing { background: #2f8f6b; }
+.obj.Travel { background: #7a8a99; }
+.stop .name { font-size: 13.5px; font-weight: 600; margin-top: 6px; line-height: 1.3; }
+.stop .zone {
+  display: inline-block; margin-top: 5px; font-size: 10.5px; font-weight: 600;
+  color: var(--muted); background: #f8f5f0; border: 1px solid var(--border);
+  padding: 2px 8px; border-radius: 999px;
+}
+.stop .note { font-size: 11.5px; color: var(--muted); margin-top: 5px; line-height: 1.35; font-style: italic; }
+
+.mapbox {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.mapwrap { flex: 1; min-height: 560px; background: #f6f1e7; position: relative; }
+.mapwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#realMap { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+.map-view-toggle {
+  position: absolute; top: 12px; left: 12px; z-index: 10;
+  display: flex; gap: 4px; background: var(--card); border-radius: 6px;
+  border: 1px solid var(--border); padding: 3px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+.map-view-btn {
+  border: none; background: transparent; color: var(--muted); font-size: 11px;
+  font-weight: 600; padding: 5px 10px; border-radius: 4px; cursor: pointer;
+  font-family: inherit; transition: all .15s;
+}
+.map-view-btn.active { background: var(--ink); color: #fff; }
+.zoom-controls { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
+.zoom-btn {
+  width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--card); color: var(--ink); font-size: 18px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .15s; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+.zoom-btn:hover { background: #f5efe6; }
+.maplegend {
+  display: flex; gap: 12px; flex-wrap: wrap; padding: 9px 14px;
+  border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); align-items: center;
+}
+.maplegend .lg { display: flex; align-items: center; gap: 5px; }
+.maplegend .dot { width: 10px; height: 10px; border-radius: 3px; }
+.maplegend .hotel { width: 12px; height: 12px; background: #3a3a3a; border-radius: 3px; }
+
+.summary {
+  margin-top: 14px; background: #fff3c4; color: #6b5416;
+  border-radius: 12px; padding: 12px 18px; font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.summary .slabel {
+  background: #6b5416; color: #fff3c4; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.5px; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+}
+.summary .arrow { color: var(--accent); font-weight: 800; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="badge" id="tripBadge"></div>
+    <h1 id="tripTitle"></h1>
+    <div class="subtitle" id="tripSub"></div>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+  <div style="text-align:center;margin-bottom:14px">
+    <button class="toggle-eat" id="toggleEat">Hide restaurants</button>
+  </div>
+
+  <div class="main">
+    <div class="timeline" id="timeline"></div>
+    <div class="mapbox">
+      <div class="mapwrap">
+        <div class="map-view-toggle">
+          <button class="map-view-btn active" id="viewSchematic">Schematic</button>
+          <button class="map-view-btn" id="viewReal">Real Map</button>
+        </div>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomIn">+</button>
+          <button class="zoom-btn" id="zoomOut">−</button>
+          <button class="zoom-btn" id="zoomReset" style="font-size:12px">1:1</button>
+        </div>
+        <svg id="map" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="realMap"></div>
+      </div>
+      <div class="maplegend">
+        <span class="lg"><span class="dot" style="background:var(--d1)"></span> Day 1</span>
+        <span class="lg"><span class="dot" style="background:var(--d2)"></span> Day 2</span>
+        <span class="lg"><span class="dot" style="background:var(--d3)"></span> Day 3</span>
+        <span class="lg"><span class="dot" style="background:var(--d4)"></span> Day 4</span>
+        <span class="lg"><span class="dot" style="background:var(--d5)"></span> Day 5</span>
+        <span class="lg"><span class="hotel"></span> Hotel</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+</div>
+
+<script>
+const DATA = {"trip": {"title": "SHANGHAI", "badge": "5 days · 4 nights · 11–15 November", "subtitle": "Family of 4 · Base: BAIhome Hotel, 355 Fuzhou Rd (People's Square) · Getting around by Didi", "hotel": {"name": "BAIhome Hotel (People's Square Fuzhou Rd)", "lat": 31.234, "lng": 121.4748}}, "days": [{"id": 1, "label": "DAY 1", "date": "Nov 11 (Wed)", "theme": "Arrival · The Bund at night", "stops": [{"time": "16:45", "zone": "Hotel (Fuzhou Rd)", "name": "Arrive hotel, drop luggage", "objective": "Travel", "note": "BAIhome Hotel, 355 Fuzhou Rd", "lat": 31.234, "lng": 121.4748, "short": "Hotel (drop bags)"}, {"time": "17:00–17:45", "zone": "People's Square", "name": "Easy light meal near hotel", "objective": "Eat", "note": "Noodles / congee / quick local spot near Fuzhou Rd — keep it light", "lat": 31.2345, "lng": 121.4775, "short": "Light meal"}, {"time": "18:00–19:30", "zone": "The Bund", "name": "The Bund promenade (Puxi side)", "objective": "Sightseeing", "note": "Stroll the waterfront, view Lujiazui skyline lit up from across the river; ⚡ swap with Day 2 North Bund — decide on the day", "lat": 31.245, "lng": 121.491, "short": "The Bund"}]}, {"id": 2, "label": "DAY 2", "date": "Nov 12 (Thu)", "theme": "West Nanjing → People's Sq → East Nanjing → North Bund", "stops": [{"time": "10:00–10:45", "zone": "West Nanjing", "name": "Amam Bakery (Kerry Centre)", "objective": "Eat", "note": "Pastries + coffee, opens 10:00", "lat": 31.2285, "lng": 121.447, "short": "Amam Bakery"}, {"time": "10:45–12:00", "zone": "West Nanjing", "name": "West Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Quietest part of the day for shopping", "lat": 31.2345, "lng": 121.465, "short": "West Nanjing Rd"}, {"time": "12:00–13:00", "zone": "West Nanjing", "name": "Xie San Bao (74 Nanhui Rd)", "objective": "Eat", "note": "Lunch — crab dishes, Nov is peak crab season", "lat": 31.2368, "lng": 121.4595, "short": "Xie San Bao"}, {"time": "13:30–15:00", "zone": "People's Square", "name": "People's Square (+ Shanghai Museum)", "objective": "Sightseeing", "note": "Bonus landmark, right between the two streets", "lat": 31.2296, "lng": 121.472, "short": "People's Square"}, {"time": "15:00–16:00", "zone": "People's Square", "name": "Shanghai IFC (shopping)", "objective": "Shopping", "note": "Mall next to People's Square — fashion, cosmetics, accessories; 3-min walk", "lat": 31.232, "lng": 121.47, "short": "Shanghai IFC"}, {"time": "16:15–17:30", "zone": "East Nanjing", "name": "East Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Shops open till 22:00, livelier in the evening", "lat": 31.2355, "lng": 121.483, "short": "East Nanjing Rd"}, {"time": "18:00–19:00", "zone": "East Nanjing", "name": "Long Time Ago (830 E. Nanjing Rd)", "objective": "Eat", "note": "Dinner — Xinjiang lamb skewers, night-market vibe, open till 00:00", "lat": 31.2348, "lng": 121.4895, "short": "Long Time Ago"}, {"time": "19:15–20:00", "zone": "North Bund", "name": "North Bund + Waibaidu Bridge", "objective": "Sightseeing", "note": "1933 Old Millfun area, walk the bridge — both skylines lit; ⚡ swap with Day 1 The Bund — decide on the day", "lat": 31.2455, "lng": 121.4925, "short": "North Bund + Bridge"}]}, {"id": 3, "label": "DAY 3", "date": "Nov 13 (Fri)", "theme": "Jing'an → Anfu → Wukang", "stops": [{"time": "09:00–10:30", "zone": "Jing'an Temple", "name": "Jing'an Temple", "objective": "Sightseeing", "note": "Go early — fills up by 10; 10–15 min Didi from hotel", "lat": 31.2235, "lng": 121.445, "short": "Jing'an Temple"}, {"time": "10:45–11:15", "zone": "Jing'an Temple", "name": "Jing'an Park / temple area", "objective": "Sightseeing", "note": "Slow stroll or a café", "lat": 31.2245, "lng": 121.4428, "short": "Jing'an Park"}, {"time": "11:30–12:30", "zone": "West Nanjing", "name": "Lunch: Kerry Centre zone", "objective": "Eat", "note": "Try a local Shanghainese (本帮菜) spot", "lat": 31.2285, "lng": 121.447, "short": "Lunch (Kerry Centre)"}, {"time": "12:45–13:30", "zone": "Anfu Road", "name": "13DE MARZO Café (322 Anfu Rd)", "objective": "Eat", "note": "Viral teddy-bear café, bear on every drink, closes 18:00, no seating", "lat": 31.2133, "lng": 121.4401, "short": "13DE MARZO Café"}, {"time": "13:30–14:30", "zone": "Anfu Road", "name": "Anfu Rd stroll", "objective": "Shopping", "note": "Trendy street, cafés, shops", "lat": 31.214, "lng": 121.434, "short": "Anfu Rd"}, {"time": "14:45–15:15", "zone": "FFC", "name": "BSF Pastry (576 Huaihai Middle Rd)", "objective": "Eat", "note": "Pork-floss buns — buy some to take home; before 4 p.m.", "lat": 31.2178, "lng": 121.459, "short": "BSF Pastry"}, {"time": "15:30–17:00", "zone": "Wukang Road", "name": "Wukang Rd", "objective": "Sightseeing", "note": "Plane-tree avenue, Wukang Building, late-afternoon light", "lat": 31.2118, "lng": 121.4405, "short": "Wukang Rd"}, {"time": "18:00–19:00", "zone": "People's Square", "name": "Grandma's Home 外婆家 (dinner)", "objective": "Eat", "note": "Jiangsu-Zhejiang cuisine, family-friendly; ~10 min Didi from Wukang, ~5 min from hotel", "lat": 31.2355, "lng": 121.4765, "short": "Grandma's Home"}]}, {"id": 4, "label": "DAY 4", "date": "Nov 14 (Sat)", "theme": "Yu Garden → Xintiandi → Tianzifang", "stops": [{"time": "10:00–11:30", "zone": "Yu Garden", "name": "Yu Garden + City God Temple", "objective": "Sightseeing", "note": "MUST-GO — morning = fewer crowds; 20-min Didi from hotel", "lat": 31.2256, "lng": 121.4922, "short": "Yu Garden"}, {"time": "11:45–12:45", "zone": "Old Town / Yu Garden", "name": "Lai Lai Xiao Long (504 Tianjin Rd)", "objective": "Eat", "note": "Lunch — crab-roe xiaolongbao, queue likely, arrive by 12:00", "lat": 31.2385, "lng": 121.4845, "short": "Lai Lai Xiao Long"}, {"time": "13:00–15:00", "zone": "Xintiandi", "name": "Xintiandi", "objective": "Shopping", "note": "Shikumen lanes, shops, cafés", "lat": 31.219, "lng": 121.4745, "short": "Xintiandi"}, {"time": "15:15–16:45", "zone": "Xintiandi / Tianzifang", "name": "Tianzifang", "objective": "Shopping", "note": "M alleys, best before dark", "lat": 31.2103, "lng": 121.4715, "short": "Tianzifang"}, {"time": "18:00–19:00", "zone": "Xintiandi", "name": "Fei Da Chu (Xintiandi Plaza F4)", "objective": "Eat", "note": "Dinner — Hunan cuisine; book or arrive by 17:45", "lat": 31.2205, "lng": 121.4755, "short": "Fei Da Chu"}, {"time": "19:15–20:30", "zone": "Xintiandi", "name": "Xintiandi at night", "objective": "Sightseeing", "note": "Lanes lit up, café or late drink", "lat": 31.2195, "lng": 121.4735, "short": "Xintiandi (night)"}]}, {"id": 5, "label": "DAY 5", "date": "Nov 15 (Sun)", "theme": "Last laps → airport", "stops": [{"time": "08:30–09:30", "zone": "Hotel / People's Square", "name": "Breakfast near hotel", "objective": "Eat", "note": "Sleep in, easy start", "lat": 31.2345, "lng": 121.477, "short": "Breakfast"}, {"time": "09:30–11:00", "zone": "Hotel / People's Square", "name": "Bakery run near hotel (BSF / Amam)", "objective": "Eat", "note": "Buy take-home pastries", "lat": 31.235, "lng": 121.4785, "short": "Bakery run"}, {"time": "11:30–12:15", "zone": "East Nanjing", "name": "Light lunch (E. Nanjing Rd)", "objective": "Eat", "note": "Any spot on the street", "lat": 31.2355, "lng": 121.481, "short": "Light lunch"}, {"time": "12:45–14:00", "zone": "Airport", "name": "Didi to PVG", "objective": "Travel", "note": "Leave 12:45 — lull before evening rush; 6-seater for 4 + luggage", "lat": 31.1434, "lng": 121.8052, "short": "Didi to PVG", "offmap": true}, {"time": "14:15–15:45", "zone": "Airport", "name": "Check-in + security", "objective": "Travel", "note": "International flight — 2.5h buffer before 17:15", "lat": 31.1434, "lng": 121.8052, "short": "Check-in", "offmap": true}, {"time": "17:15", "zone": "Airport", "name": "Flight takes off", "objective": "Travel", "note": "Safe travels!", "lat": 31.1434, "lng": 121.8052, "short": "Flight 17:15", "offmap": true}]}]};
+const W = 1000, H = 800;
+const DAY_COLORS = ['#e0409a','#2f8f6b','#e07b2f','#5b7fb5','#9b59b6'];
+let hideEat = false;
+const svg = document.getElementById('map');
+const NS = 'http://www.w3.org/2000/svg';
+
+function project(lat, lng) {
+  return [(lng - 121.42) / 0.11 * W, (31.26 - lat) / 0.065 * H];
+}
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+/* ---------- static base map ---------- */
+function buildBase() {
+  const g = el('g', { id: 'base' }, svg);
+  el('rect', { x:0, y:0, width:W, height:H, fill:'#f6f1e7' }, g);
+  el('path', { d:'M 60 302 L 645 302', stroke:'#e9e1d2','stroke-width':6, fill:'none' }, g);
+  el('path', { d:'M 120 519 L 645 519', stroke:'#e9e1d2','stroke-width':5, fill:'none' }, g);
+  el('path', { d:'M 560 120 L 560 640', stroke:'#e9e1d2','stroke-width':5, fill:'none' }, g);
+  el('path', {
+    d:'M 700 -20 C 690 120 680 220 688 320 C 696 420 708 520 714 620 C 718 700 722 760 726 820',
+    stroke:'#a8d4ea','stroke-width':58, fill:'none','stroke-linecap':'round'
+  }, g);
+  const rt = el('text', { x:0, y:0, fill:'#5f93b5','font-size':15,'font-weight':700,'letter-spacing':3, transform:'translate(712 560) rotate(-85)' }, g);
+  rt.textContent = 'HUANGPU RIVER';
+  const parks = [
+    [473,314,26,17,"People's Square"],
+    [207,438,28,19,"Jing'an Park"],
+    [656,424,17,13,"Yu Garden"],
+    [330,590,30,20,"Fuxing Park"]
+  ];
+  parks.forEach(p => {
+    el('ellipse', { cx:p[0], cy:p[1], rx:p[2], ry:p[3], fill:'#cfe6c5' }, g);
+    const t = el('text', { x:p[0], y:p[1]+p[3]+13, fill:'#8aa87e','font-size':10.5,'text-anchor':'middle','font-style':'italic' }, g);
+    t.textContent = p[4];
+  });
+  const area = (x,y,txt) => {
+    const t = el('text', { x,y, fill:'#c2b8a4','font-size':15,'font-weight':700,'letter-spacing':4,'text-anchor':'middle' }, g);
+    t.textContent = txt;
+  };
+  area(790,250,'LUJIAZUI'); area(800,480,'PUDONG'); area(150,170,'PUXI');
+  const plane = el('text', { x:935, y:640, 'font-size':30, 'text-anchor':'middle' }, g);
+  plane.textContent = '✈';
+  el('path', { d:'M 905 660 L 985 745', stroke:'#b9a98f','stroke-width':2.5,'stroke-dasharray':'7 6', fill:'none' }, g);
+  const ap = el('text', { x:872, y:622, fill:'#8a7a66','font-size':12,'font-weight':700,'text-anchor':'end' }, g);
+  ap.textContent = 'PVG Airport (off-map)';
+}
+
+/* ---------- hotel marker ---------- */
+function buildHotel() {
+  const [hx,hy] = project(DATA.trip.hotel.lat, DATA.trip.hotel.lng);
+  const g = el('g', { id:'hotel' }, svg);
+  el('rect', { x:hx-11, y:hy-11, width:22, height:22, rx:5, fill:'#3a3a3a', stroke:'#fff','stroke-width':2 }, g);
+  const t = el('text', { x:hx, y:hy+4.5, fill:'#fff','font-size':12,'text-anchor':'middle','font-weight':700 }, g);
+  t.textContent = 'H';
+  const lbl = el('text', { x:hx, y:hy-18, fill:'#3a3a3a','font-size':11,'font-weight':700,'text-anchor':'middle' }, g);
+  lbl.textContent = 'BAIhome (hotel)';
+}
+
+/* ---------- all-days layer (background, dim) ---------- */
+let allDaysLayer, selectedLayer;
+function initLayers() {
+  allDaysLayer = el('g', { id:'allDays' }, svg);
+  selectedLayer = el('g', { id:'selected' }, svg);
+}
+
+function getStops(day) {
+  return day.stops.filter(s => !s.offmap && (!hideEat || s.objective !== 'Eat')).map((s, i) => {
+    const [px, py] = project(s.lat, s.lng);
+    return Object.assign({}, s, { i, px, py });
+  });
+}
+
+function drawAllDays() {
+  allDaysLayer.innerHTML = '';
+  DATA.days.forEach((day, di) => {
+    const color = DAY_COLORS[di];
+    const stops = getStops(day);
+    for (let i = 0; i < stops.length - 1; i++) {
+      el('line', {
+        x1:stops[i].px, y1:stops[i].py, x2:stops[i+1].px, y2:stops[i+1].py,
+        stroke:color, 'stroke-width':2, 'stroke-dasharray':'6 5', opacity:0.35
+      }, allDaysLayer);
+    }
+    stops.forEach(s => {
+      el('rect', {
+        x:s.px-8, y:s.py-8, width:16, height:16, rx:4,
+        fill:color, stroke:'#fff','stroke-width':1.5, opacity:0.5
+      }, allDaysLayer);
+    });
+  });
+}
+
+/* ---------- selected day layer (prominent) ---------- */
+function drawSelected(day) {
+  selectedLayer.innerHTML = '';
+  const color = DAY_COLORS[day.id - 1];
+  const stops = getStops(day);
+  for (let i = 0; i < stops.length - 1; i++) {
+    el('line', {
+      x1:stops[i].px, y1:stops[i].py, x2:stops[i+1].px, y2:stops[i+1].py,
+      stroke:color, 'stroke-width':3.5, 'stroke-dasharray':'9 7', opacity:0.9
+    }, selectedLayer);
+    const mx = (stops[i].px+stops[i+1].px)/2, my = (stops[i].py+stops[i+1].py)/2;
+    const ang = Math.atan2(stops[i+1].py-stops[i].py, stops[i+1].px-stops[i].px)*180/Math.PI;
+    el('path', { d:'M -6 -6 L 8 0 L -6 6 Z', fill:color, transform:'translate('+mx+' '+my+') rotate('+ang+')' }, selectedLayer);
+  }
+  const placed = [];
+  stops.forEach((s, i) => {
+    el('rect', { x:s.px-11, y:s.py-11, width:22, height:22, rx:5, fill:color, stroke:'#fff','stroke-width':2 }, selectedLayer);
+    const n = el('text', { x:s.px, y:s.py+4, fill:'#fff','font-size':11.5,'font-weight':700,'text-anchor':'middle' }, selectedLayer);
+    n.textContent = i+1;
+    const w = s.short.length * 6.1 + 16, h = 21;
+    const cands = [
+      [s.px+20, s.py-h/2],[s.px-20-w, s.py-h/2],[s.px-w/2, s.py-40],[s.px-w/2, s.py+22],
+      [s.px+20, s.py-h/2+10],[s.px-20-w, s.py-h/2-10],[s.px-w/2, s.py-62],[s.px-w/2, s.py+44]
+    ];
+    let box = { x:cands[0][0], y:cands[0][1], w, h };
+    for (const c of cands) {
+      const b = { x:c[0], y:c[1], w, h };
+      if (b.x < 4 || b.x+b.w > W-4 || b.y < 4 || b.y+b.h > H-4) continue;
+      if (placed.every(p => !(b.x < p.x+p.w+4 && b.x+b.w+4 > p.x && b.y < p.y+p.h+3 && b.y+b.h+3 > p.y))) { box = b; break; }
+    }
+    placed.push(box);
+    el('rect', { x:box.x, y:box.y, width:box.w, height:box.h, rx:5, fill:'#ffdf5e', stroke:'#e8c93e','stroke-width':1 }, selectedLayer);
+    const t = el('text', { x:box.x+box.w/2, y:box.y+box.h/2+3.5, fill:'#222','font-size':11,'font-weight':600,'text-anchor':'middle' }, selectedLayer);
+    t.textContent = s.short;
+  });
+}
+
+/* ---------- timeline ---------- */
+function renderTimeline(day) {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '';
+  const stops = hideEat ? day.stops.filter(s => s.objective !== 'Eat') : day.stops;
+  stops.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'stop';
+    d.dataset.i = i;
+    d.innerHTML =
+      '<div class="row1">' +
+        '<span class="num">'+(i+1)+'</span>' +
+        '<span class="time">'+s.time+'</span>' +
+        '<span class="obj '+s.objective+'">'+s.objective+'</span>' +
+      '</div>' +
+      '<div class="name">'+s.name+'</div>' +
+      '<span class="zone">📍 '+s.zone+'</span>' +
+      (s.note ? '<div class="note">'+s.note+'</div>' : '');
+    tl.appendChild(d);
+  });
+}
+
+/* ---------- tabs ---------- */
+function buildTabs() {
+  const tabs = document.getElementById('tabs');
+  DATA.days.forEach(d => {
+    const b = document.createElement('button');
+    b.className = 'tab';
+    b.dataset.id = d.id;
+    b.innerHTML = d.label + '<small>' + d.date + '</small>';
+    b.addEventListener('click', () => selectDay(d.id));
+    tabs.appendChild(b);
+  });
+}
+
+function selectDay(id) {
+  const day = DATA.days.find(d => d.id === id);
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', +t.dataset.id === id));
+  drawSelected(day);
+  renderTimeline(day);
+  if (realMap && document.getElementById('realMap').style.display !== 'none') drawRealMap(day);
+  const parts = (hideEat ? day.stops.filter(s => s.objective !== 'Eat') : day.stops).map(s => s.short);
+  document.getElementById('summary').innerHTML =
+    '<span class="slabel">'+day.label+' ROUTE</span> ' +
+    parts.join(' <span class="arrow">→</span> ');
+}
+
+/* ---------- real map (Leaflet) ---------- */
+let realMap = null, realMarkers = [], realRoute = null;
+function initRealMap() {
+  const center = [DATA.trip.hotel.lat, DATA.trip.hotel.lng];
+  realMap = L.map('realMap', { zoomControl: false }).setView(center, 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 18
+  }).addTo(realMap);
+  L.control.zoom({ position: 'bottomright' }).addTo(realMap);
+  // hotel marker
+  L.marker(center, { icon: L.divIcon({ html: '<div style="background:#3a3a3a;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff">H</div>', className: '' }) })
+    .addTo(realMap).bindPopup('<b>BAIhome Hotel</b><br>355 Fuzhou Rd');
+}
+function drawRealMap(day) {
+  if (!realMap) return;
+  realMarkers.forEach(m => realMap.removeLayer(m));
+  realMarkers = [];
+  if (realRoute) realMap.removeLayer(realRoute);
+  const stops = day.stops.filter(s => !s.offmap && (!hideEat || s.objective !== 'Eat'));
+  const color = DAY_COLORS[day.id - 1];
+  const pts = stops.map(s => [s.lat, s.lng]);
+  if (pts.length > 1) {
+    realRoute = L.polyline(pts, { color: color, weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(realMap);
+  }
+  stops.forEach((s, i) => {
+    const icon = L.divIcon({
+      html: '<div style="background:'+color+';color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)">'+(i+1)+'</div>',
+      className: ''
+    });
+    const m = L.marker([s.lat, s.lng], { icon: icon }).addTo(realMap);
+    m.bindPopup('<b>'+(i+1)+'. '+s.name+'</b><br><i>'+s.time+'</i><br>'+s.zone);
+    realMarkers.push(m);
+  });
+  if (pts.length > 0) realMap.fitBounds(pts, { padding: [40, 40] });
+}
+function switchMapView(mode) {
+  const svgEl = document.getElementById('map');
+  const realEl = document.getElementById('realMap');
+  const zoomCtrl = document.querySelector('.zoom-controls');
+  if (mode === 'real') {
+    svgEl.style.display = 'none';
+    realEl.style.display = 'block';
+    zoomCtrl.style.display = 'none';
+    document.getElementById('viewSchematic').classList.remove('active');
+    document.getElementById('viewReal').classList.add('active');
+    if (!realMap) initRealMap();
+    realMap.invalidateSize();
+    const day = DATA.days.find(d => +document.querySelector('.tab.active').dataset.id === d.id);
+    drawRealMap(day);
+  } else {
+    realEl.style.display = 'none';
+    svgEl.style.display = 'block';
+    zoomCtrl.style.display = 'flex';
+    document.getElementById('viewReal').classList.remove('active');
+    document.getElementById('viewSchematic').classList.add('active');
+  }
+}
+document.getElementById('viewSchematic').addEventListener('click', () => switchMapView('schematic'));
+document.getElementById('viewReal').addEventListener('click', () => switchMapView('real'));
+
+/* ---------- zoom ---------- */
+let vb = { x: 0, y: 0, w: W, h: H };
+function setViewBox() {
+  svg.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h);
+}
+function zoomIn() {
+  const nw = vb.w * 0.7, nh = vb.h * 0.7;
+  vb.x += (vb.w - nw) / 2; vb.y += (vb.h - nh) / 2;
+  vb.w = nw; vb.h = nh;
+  setViewBox();
+}
+function zoomOut() {
+  const nw = Math.min(W, vb.w / 0.7), nh = Math.min(H, vb.h / 0.7);
+  vb.x -= (nw - vb.w) / 2; vb.y -= (nh - vb.h) / 2;
+  vb.w = nw; vb.h = nh;
+  setViewBox();
+}
+function zoomReset() { vb = { x:0, y:0, w:W, h:H }; setViewBox(); }
+document.getElementById('zoomIn').addEventListener('click', zoomIn);
+document.getElementById('zoomOut').addEventListener('click', zoomOut);
+document.getElementById('zoomReset').addEventListener('click', zoomReset);
+svg.addEventListener('wheel', function(e) {
+  e.preventDefault();
+  if (e.deltaY < 0) zoomIn(); else zoomOut();
+}, { passive: false });
+
+/* ---------- toggle restaurants ---------- */
+document.getElementById('toggleEat').addEventListener('click', function() {
+  hideEat = !hideEat;
+  this.classList.toggle('active', hideEat);
+  this.textContent = hideEat ? 'Show restaurants' : 'Hide restaurants';
+  const day = DATA.days.find(d => +document.querySelector('.tab.active').dataset.id === d.id);
+  drawAllDays();
+  drawSelected(day);
+  renderTimeline(day);
+  if (realMap && document.getElementById('realMap').style.display !== 'none') drawRealMap(day);
+  const parts = (hideEat ? day.stops.filter(s => s.objective !== 'Eat') : day.stops).map(s => s.short);
+  document.getElementById('summary').innerHTML =
+    '<span class="slabel">'+day.label+' ROUTE</span> ' +
+    parts.join(' <span class="arrow">→</span> ');
+});
+
+/* ---------- init ---------- */
+document.getElementById('tripBadge').textContent = DATA.trip.badge;
+document.getElementById('tripTitle').textContent = DATA.trip.title;
+document.getElementById('tripSub').textContent = DATA.trip.subtitle;
+buildBase();
+initLayers();
+buildHotel();
+drawAllDays();
+buildTabs();
+selectDay(1);
+</script>
+</body>
+</html>

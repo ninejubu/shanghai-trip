@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shanghai Trip · 11–15 November</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
   --bg: #fdf8f0; --card: #ffffff; --ink: #2b2320; --muted: #8a7a70;
@@ -87,6 +89,18 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
 }
 .mapwrap { flex: 1; min-height: 560px; background: #f6f1e7; position: relative; }
 .mapwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#realMap { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+.map-view-toggle {
+  position: absolute; top: 12px; left: 12px; z-index: 10;
+  display: flex; gap: 4px; background: var(--card); border-radius: 6px;
+  border: 1px solid var(--border); padding: 3px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+.map-view-btn {
+  border: none; background: transparent; color: var(--muted); font-size: 11px;
+  font-weight: 600; padding: 5px 10px; border-radius: 4px; cursor: pointer;
+  font-family: inherit; transition: all .15s;
+}
+.map-view-btn.active { background: var(--ink); color: #fff; }
 .zoom-controls { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
 .zoom-btn {
   width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border);
@@ -132,12 +146,17 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
     <div class="timeline" id="timeline"></div>
     <div class="mapbox">
       <div class="mapwrap">
+        <div class="map-view-toggle">
+          <button class="map-view-btn active" id="viewSchematic">Schematic</button>
+          <button class="map-view-btn" id="viewReal">Real Map</button>
+        </div>
         <div class="zoom-controls">
           <button class="zoom-btn" id="zoomIn">+</button>
           <button class="zoom-btn" id="zoomOut">−</button>
           <button class="zoom-btn" id="zoomReset" style="font-size:12px">1:1</button>
         </div>
         <svg id="map" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="realMap"></div>
       </div>
       <div class="maplegend">
         <span class="lg"><span class="dot" style="background:var(--d1)"></span> Day 1</span>
@@ -329,11 +348,72 @@ function selectDay(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', +t.dataset.id === id));
   drawSelected(day);
   renderTimeline(day);
+  if (realMap && document.getElementById('realMap').style.display !== 'none') drawRealMap(day);
   const parts = (hideEat ? day.stops.filter(s => s.objective !== 'Eat') : day.stops).map(s => s.short);
   document.getElementById('summary').innerHTML =
     '<span class="slabel">'+day.label+' ROUTE</span> ' +
     parts.join(' <span class="arrow">→</span> ');
 }
+
+/* ---------- real map (Leaflet) ---------- */
+let realMap = null, realMarkers = [], realRoute = null;
+function initRealMap() {
+  const center = [DATA.trip.hotel.lat, DATA.trip.hotel.lng];
+  realMap = L.map('realMap', { zoomControl: false }).setView(center, 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 18
+  }).addTo(realMap);
+  L.control.zoom({ position: 'bottomright' }).addTo(realMap);
+  // hotel marker
+  L.marker(center, { icon: L.divIcon({ html: '<div style="background:#3a3a3a;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff">H</div>', className: '' }) })
+    .addTo(realMap).bindPopup('<b>BAIhome Hotel</b><br>355 Fuzhou Rd');
+}
+function drawRealMap(day) {
+  if (!realMap) return;
+  realMarkers.forEach(m => realMap.removeLayer(m));
+  realMarkers = [];
+  if (realRoute) realMap.removeLayer(realRoute);
+  const stops = day.stops.filter(s => !s.offmap && (!hideEat || s.objective !== 'Eat'));
+  const color = DAY_COLORS[day.id - 1];
+  const pts = stops.map(s => [s.lat, s.lng]);
+  if (pts.length > 1) {
+    realRoute = L.polyline(pts, { color: color, weight: 3, dashArray: '8 6', opacity: 0.8 }).addTo(realMap);
+  }
+  stops.forEach((s, i) => {
+    const icon = L.divIcon({
+      html: '<div style="background:'+color+';color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)">'+(i+1)+'</div>',
+      className: ''
+    });
+    const m = L.marker([s.lat, s.lng], { icon: icon }).addTo(realMap);
+    m.bindPopup('<b>'+(i+1)+'. '+s.name+'</b><br><i>'+s.time+'</i><br>'+s.zone);
+    realMarkers.push(m);
+  });
+  if (pts.length > 0) realMap.fitBounds(pts, { padding: [40, 40] });
+}
+function switchMapView(mode) {
+  const svgEl = document.getElementById('map');
+  const realEl = document.getElementById('realMap');
+  const zoomCtrl = document.querySelector('.zoom-controls');
+  if (mode === 'real') {
+    svgEl.style.display = 'none';
+    realEl.style.display = 'block';
+    zoomCtrl.style.display = 'none';
+    document.getElementById('viewSchematic').classList.remove('active');
+    document.getElementById('viewReal').classList.add('active');
+    if (!realMap) initRealMap();
+    realMap.invalidateSize();
+    const day = DATA.days.find(d => +document.querySelector('.tab.active').dataset.id === d.id);
+    drawRealMap(day);
+  } else {
+    realEl.style.display = 'none';
+    svgEl.style.display = 'block';
+    zoomCtrl.style.display = 'flex';
+    document.getElementById('viewReal').classList.remove('active');
+    document.getElementById('viewSchematic').classList.add('active');
+  }
+}
+document.getElementById('viewSchematic').addEventListener('click', () => switchMapView('schematic'));
+document.getElementById('viewReal').addEventListener('click', () => switchMapView('real'));
 
 /* ---------- zoom ---------- */
 let vb = { x: 0, y: 0, w: W, h: H };
@@ -370,6 +450,7 @@ document.getElementById('toggleEat').addEventListener('click', function() {
   drawAllDays();
   drawSelected(day);
   renderTimeline(day);
+  if (realMap && document.getElementById('realMap').style.display !== 'none') drawRealMap(day);
   const parts = (hideEat ? day.stops.filter(s => s.objective !== 'Eat') : day.stops).map(s => s.short);
   document.getElementById('summary').innerHTML =
     '<span class="slabel">'+day.label+' ROUTE</span> ' +
