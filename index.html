@@ -416,7 +416,8 @@ document.getElementById('viewSchematic').addEventListener('click', () => switchM
 document.getElementById('viewReal').addEventListener('click', () => switchMapView('real'));
 
 /* ---------- zoom ---------- */
-let vb = { x: 0, y: 0, w: W, h: H };
+const DEFAULT_VB = { x: W * 0.15, y: H * 0.15, w: W * 0.7, h: H * 0.7 }; // default = one zoom-in step
+let vb = { x: DEFAULT_VB.x, y: DEFAULT_VB.y, w: DEFAULT_VB.w, h: DEFAULT_VB.h };
 function setViewBox() {
   svg.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h);
 }
@@ -432,7 +433,7 @@ function zoomOut() {
   vb.w = nw; vb.h = nh;
   setViewBox();
 }
-function zoomReset() { vb = { x:0, y:0, w:W, h:H }; setViewBox(); }
+function zoomReset() { vb = { x: DEFAULT_VB.x, y: DEFAULT_VB.y, w: DEFAULT_VB.w, h: DEFAULT_VB.h }; setViewBox(); }
 document.getElementById('zoomIn').addEventListener('click', zoomIn);
 document.getElementById('zoomOut').addEventListener('click', zoomOut);
 document.getElementById('zoomReset').addEventListener('click', zoomReset);
