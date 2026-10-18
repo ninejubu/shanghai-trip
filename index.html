@@ -89,6 +89,7 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
 }
 .mapwrap { flex: 1; min-height: 560px; background: #f6f1e7; position: relative; }
 .mapwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#map { cursor: grab; }
 #realMap { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
 .map-view-toggle {
   position: absolute; top: 12px; left: 12px; z-index: 10;
@@ -442,6 +443,43 @@ svg.addEventListener('wheel', function(e) {
   e.preventDefault();
   if (e.deltaY < 0) zoomIn(); else zoomOut();
 }, { passive: false });
+
+/* ---------- pan (drag to move) ---------- */
+let panning = false, panStart = null;
+function panScale() { // viewBox units per screen px (accounting for "meet" letterboxing)
+  return Math.max(vb.w / svg.clientWidth, vb.h / svg.clientHeight);
+}
+svg.addEventListener('mousedown', function(e) {
+  panning = true;
+  panStart = { x: e.clientX, y: e.clientY, vx: vb.x, vy: vb.y };
+  svg.style.cursor = 'grabbing';
+  e.preventDefault();
+});
+window.addEventListener('mousemove', function(e) {
+  if (!panning) return;
+  const s = panScale();
+  vb.x = panStart.vx - (e.clientX - panStart.x) * s;
+  vb.y = panStart.vy - (e.clientY - panStart.y) * s;
+  setViewBox();
+});
+window.addEventListener('mouseup', function() {
+  panning = false;
+  svg.style.cursor = '';
+});
+svg.addEventListener('touchstart', function(e) {
+  if (e.touches.length !== 1) return;
+  panning = true;
+  panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, vx: vb.x, vy: vb.y };
+}, { passive: true });
+svg.addEventListener('touchmove', function(e) {
+  if (!panning || e.touches.length !== 1) return;
+  e.preventDefault();
+  const s = panScale();
+  vb.x = panStart.vx - (e.touches[0].clientX - panStart.x) * s;
+  vb.y = panStart.vy - (e.touches[0].clientY - panStart.y) * s;
+  setViewBox();
+}, { passive: false });
+svg.addEventListener('touchend', function() { panning = false; });
 
 /* ---------- toggle restaurants ---------- */
 document.getElementById('toggleEat').addEventListener('click', function() {
