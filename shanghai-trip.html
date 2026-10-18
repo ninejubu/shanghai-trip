@@ -81,6 +81,32 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
   padding: 2px 8px; border-radius: 999px;
 }
 .stop .note { font-size: 11.5px; color: var(--muted); margin-top: 5px; line-height: 1.35; font-style: italic; }
+.stop .detail { margin-top: 8px; border-top: 1px dashed var(--border); padding-top: 8px; }
+.stop .detail .dhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stop .detail .dhead .dname { font-size: 13px; font-weight: 700; }
+.stop .detail .dhead .dtime { font-size: 12px; font-weight: 700; color: #7a4a50; }
+.stop .detail .mustgo { background: #e07b2f; color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 0.4px; padding: 2px 8px; border-radius: 999px; }
+.stop .detail .dzone { display: inline-block; margin-top: 6px; font-size: 10.5px; font-weight: 600; color: var(--muted); background: #f8f5f0; border: 1px solid var(--border); padding: 2px 8px; border-radius: 999px; }
+.stop .detail .dnote { font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+.backups-btn { margin-top: 9px; border: 1.5px solid #e07b2f; background: #fff; color: #e07b2f; font-weight: 700; font-size: 11.5px; padding: 5px 12px; border-radius: 999px; cursor: pointer; font-family: inherit; transition: all .15s; }
+.backups-btn:hover { background: #e07b2f; color: #fff; }
+.backups-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+.backups-list .bitem { display: flex; align-items: baseline; gap: 8px; background: #fbf6ee; border: 1px solid var(--border); border-radius: 8px; padding: 6px 9px; font-size: 12px; }
+.backups-list .bitem .bname { font-weight: 700; }
+.backups-list .bitem .bday { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.backups-list .bitem .bdist { margin-left: auto; color: #2f8f6b; font-weight: 700; font-size: 11px; white-space: nowrap; }
+.backups-list .bitem .bbranch { color: #e07b2f; font-weight: 700; font-size: 10.5px; white-space: nowrap; }
+.backups-note { margin-top: 6px; font-size: 10.5px; color: var(--muted); font-style: italic; }
+.maplegend .bbranch { width: 12px; height: 12px; border: 2px dashed #e07b2f; border-radius: 50%; background: #fff; display: inline-block; }
+.schem-popup { position: absolute; z-index: 20; background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.18); padding: 10px 12px; width: 250px; font-size: 12px; }
+.schem-popup .sp-head { display: flex; align-items: flex-start; gap: 6px; }
+.schem-popup .sp-name { font-weight: 700; font-size: 13px; line-height: 1.3; }
+.schem-popup .sp-meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.schem-popup .sp-close { margin-left: auto; border: none; background: transparent; color: var(--muted); font-size: 15px; cursor: pointer; line-height: 1; padding: 0 2px; }
+.schem-popup .backups-btn { margin-top: 8px; }
+.leaflet-popup-content .backups-btn { margin-top: 8px; }
+.leaflet-popup-content .backups-list { margin-top: 8px; }
+.leaflet-popup-content .backups-list .bitem { font-size: 11.5px; padding: 5px 8px; }
 
 .mapbox {
   background: var(--card); border: 1px solid var(--border); border-radius: 14px;
@@ -156,6 +182,7 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
         </div>
         <svg id="map" viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid meet"></svg>
         <div id="realMap"></div>
+        <div class="schem-popup" id="schemPopup" style="display:none"></div>
       </div>
       <div class="maplegend">
         <span class="lg"><span class="dot" style="background:var(--d1)"></span> Day 1</span>
@@ -163,6 +190,7 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
         <span class="lg"><span class="dot" style="background:var(--d3)"></span> Day 3</span>
         <span class="lg"><span class="dot" style="background:var(--d4)"></span> Day 4</span>
         <span class="lg"><span class="dot" style="background:var(--d5)"></span> Day 5</span>
+        <span class="lg"><span class="bbranch"></span> Backup branch</span>
         <span class="lg"><span class="hotel"></span> Hotel</span>
       </div>
     </div>
@@ -172,7 +200,80 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
 </div>
 
 <script>
-const DATA = {"trip": {"title": "SHANGHAI", "badge": "5 days · 4 nights · 11–15 November", "subtitle": "Family of 4 · Base: BAIhome Hotel, 355 Fuzhou Rd (People's Square) · Getting around by Didi", "hotel": {"name": "BAIhome Hotel (People's Square Fuzhou Rd)", "lat": 31.234, "lng": 121.4748}}, "days": [{"id": 1, "label": "DAY 1", "date": "Nov 11 (Wed)", "theme": "Arrival · The Bund at night", "stops": [{"time": "16:45", "zone": "Hotel (Fuzhou Rd)", "name": "Arrive hotel, drop luggage", "objective": "Travel", "note": "BAIhome Hotel, 355 Fuzhou Rd", "lat": 31.234, "lng": 121.4748, "short": "Hotel (drop bags)"}, {"time": "17:00–17:45", "zone": "Guangdong Rd (People's Square area)", "name": "Huxilao Longtang Noodle House (Guangdong Road Branch)", "objective": "Eat", "note": "World Trade Tower, 500 Guangdong Rd (1F) — classic Shanghai noodles; clam pork liver noodles is the signature. ~600 m walk from hotel / East Nanjing Rd metro", "lat": 31.23272, "lng": 121.481988, "short": "Huxilao noodles"}, {"time": "18:00–19:30", "zone": "The Bund", "name": "The Bund promenade (Puxi side)", "objective": "Sightseeing", "note": "Stroll the waterfront, view Lujiazui skyline lit up from across the river; ⚡ swap with Day 2 North Bund — decide on the day", "lat": 31.245, "lng": 121.491, "short": "The Bund"}]}, {"id": 2, "label": "DAY 2", "date": "Nov 12 (Thu)", "theme": "West Nanjing → People's Sq → East Nanjing → North Bund", "stops": [{"time": "10:00–10:45", "zone": "West Nanjing", "name": "Amam Bakery (Kerry Centre)", "objective": "Eat", "note": "Pastries + coffee, opens 10:00", "lat": 31.2285, "lng": 121.447, "short": "Amam Bakery"}, {"time": "10:45–12:00", "zone": "West Nanjing", "name": "West Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Quietest part of the day for shopping", "lat": 31.2345, "lng": 121.465, "short": "West Nanjing Rd"}, {"time": "12:00–13:00", "zone": "West Nanjing", "name": "Xie San Bao (74 Nanhui Rd)", "objective": "Eat", "note": "Lunch — crab dishes, Nov is peak crab season", "lat": 31.2368, "lng": 121.4595, "short": "Xie San Bao"}, {"time": "13:30–15:00", "zone": "People's Square", "name": "People's Square (+ Shanghai Museum)", "objective": "Sightseeing", "note": "Bonus landmark, right between the two streets", "lat": 31.2296, "lng": 121.472, "short": "People's Square"}, {"time": "15:00–16:00", "zone": "People's Square", "name": "Shanghai IFC (shopping)", "objective": "Shopping", "note": "Mall next to People's Square — fashion, cosmetics, accessories; 3-min walk", "lat": 31.232, "lng": 121.47, "short": "Shanghai IFC"}, {"time": "16:15–17:30", "zone": "East Nanjing", "name": "East Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Shops open till 22:00, livelier in the evening", "lat": 31.2355, "lng": 121.483, "short": "East Nanjing Rd"}, {"time": "18:00–19:00", "zone": "East Nanjing", "name": "Long Time Ago (830 E. Nanjing Rd)", "objective": "Eat", "note": "Dinner — Xinjiang lamb skewers, night-market vibe, open till 00:00", "lat": 31.2348, "lng": 121.4895, "short": "Long Time Ago"}, {"time": "19:15–20:00", "zone": "North Bund", "name": "North Bund + Waibaidu Bridge", "objective": "Sightseeing", "note": "1933 Old Millfun area, walk the bridge — both skylines lit; ⚡ swap with Day 1 The Bund — decide on the day", "lat": 31.2455, "lng": 121.4925, "short": "North Bund + Bridge"}]}, {"id": 3, "label": "DAY 3", "date": "Nov 13 (Fri)", "theme": "Jing'an → Anfu → Wukang → Huaihai", "stops": [{"time": "09:00–10:45", "zone": "Jing'an Temple", "name": "Jing'an Temple + Park", "objective": "Sightseeing", "note": "Temple + adjacent park in one relaxed block; go early before it fills", "lat": 31.2235, "lng": 121.445, "short": "Jing'an Temple + Park"}, {"time": "11:00–12:00", "zone": "West Nanjing", "name": "Lunch: Kerry Centre zone", "objective": "Eat", "note": "Try a local Shanghainese (本帮菜) spot", "lat": 31.2285, "lng": 121.447, "short": "Lunch (Kerry Centre)"}, {"time": "12:15–13:00", "zone": "Anfu Road", "name": "13DE MARZO Café (322 Anfu Rd)", "objective": "Eat", "note": "Viral teddy-bear café, bear on every drink, closes 18:00, no seating", "lat": 31.2133, "lng": 121.4401, "short": "13DE MARZO Café"}, {"time": "13:00–14:00", "zone": "Anfu Road", "name": "Anfu Rd stroll", "objective": "Shopping", "note": "Trendy street, cafés, shops", "lat": 31.214, "lng": 121.434, "short": "Anfu Rd"}, {"time": "14:00–15:15", "zone": "Wukang Road", "name": "Wukang Rd", "objective": "Sightseeing", "note": "Plane-tree avenue; walk south, end at Wukang Mansion", "lat": 31.2118, "lng": 121.4405, "short": "Wukang Rd"}, {"time": "15:15–17:15", "zone": "FFC", "name": "Huaihai Middle Rd", "objective": "Shopping", "note": "2h of shops, cafés & bakeries — BSF Pastry pork-floss buns included; walk east", "lat": 31.2178, "lng": 121.459, "short": "Huaihai Rd"}, {"time": "18:00–19:00", "zone": "People's Square", "name": "Grandma's Home 外婆家 (dinner)", "objective": "Eat", "note": "Jiangsu-Zhejiang cuisine, family-friendly; short Didi from Huaihai's east end", "lat": 31.2355, "lng": 121.4765, "short": "Grandma's Home"}]}, {"id": 4, "label": "DAY 4", "date": "Nov 14 (Sat)", "theme": "Yu Garden → Xintiandi → Tianzifang", "stops": [{"time": "10:00–11:30", "zone": "Yu Garden", "name": "Yu Garden + City God Temple", "objective": "Sightseeing", "note": "MUST-GO — morning = fewer crowds; 20-min Didi from hotel", "lat": 31.2256, "lng": 121.4922, "short": "Yu Garden"}, {"time": "11:45–12:45", "zone": "Old Town / Yu Garden", "name": "Lai Lai Xiao Long (504 Tianjin Rd)", "objective": "Eat", "note": "Lunch — crab-roe xiaolongbao, queue likely, arrive by 12:00", "lat": 31.2385, "lng": 121.4845, "short": "Lai Lai Xiao Long"}, {"time": "13:00–15:00", "zone": "Xintiandi", "name": "Xintiandi", "objective": "Shopping", "note": "Shikumen lanes, shops, cafés", "lat": 31.219, "lng": 121.4745, "short": "Xintiandi"}, {"time": "15:15–16:45", "zone": "Xintiandi / Tianzifang", "name": "Tianzifang", "objective": "Shopping", "note": "M alleys, best before dark", "lat": 31.2103, "lng": 121.4715, "short": "Tianzifang"}, {"time": "18:00–19:00", "zone": "Xintiandi", "name": "Fei Da Chu (Xintiandi Plaza F4)", "objective": "Eat", "note": "Dinner — Hunan cuisine; book or arrive by 17:45", "lat": 31.2205, "lng": 121.4755, "short": "Fei Da Chu"}, {"time": "19:15–20:30", "zone": "Xintiandi", "name": "Xintiandi at night", "objective": "Sightseeing", "note": "Lanes lit up, café or late drink", "lat": 31.2195, "lng": 121.4735, "short": "Xintiandi (night)"}]}, {"id": 5, "label": "DAY 5", "date": "Nov 15 (Sun)", "theme": "Last laps → airport", "stops": [{"time": "08:30–09:30", "zone": "Hotel / People's Square", "name": "Breakfast near hotel", "objective": "Eat", "note": "Sleep in, easy start", "lat": 31.2345, "lng": 121.477, "short": "Breakfast"}, {"time": "09:30–11:00", "zone": "Hotel / People's Square", "name": "Bakery run near hotel (BSF / Amam)", "objective": "Eat", "note": "Buy take-home pastries", "lat": 31.235, "lng": 121.4785, "short": "Bakery run"}, {"time": "11:30–12:15", "zone": "East Nanjing", "name": "Light lunch (E. Nanjing Rd)", "objective": "Eat", "note": "Any spot on the street", "lat": 31.2355, "lng": 121.481, "short": "Light lunch"}, {"time": "12:45–14:00", "zone": "Airport", "name": "Didi to PVG", "objective": "Travel", "note": "Leave 12:45 — lull before evening rush; 6-seater for 4 + luggage", "lat": 31.1434, "lng": 121.8052, "short": "Didi to PVG", "offmap": true}, {"time": "14:15–15:45", "zone": "Airport", "name": "Check-in + security", "objective": "Travel", "note": "International flight — 2.5h buffer before 17:15", "lat": 31.1434, "lng": 121.8052, "short": "Check-in", "offmap": true}, {"time": "17:15", "zone": "Airport", "name": "Flight takes off", "objective": "Travel", "note": "Safe travels!", "lat": 31.1434, "lng": 121.8052, "short": "Flight 17:15", "offmap": true}]}]};
+const DATA = {"trip": {"title": "SHANGHAI", "badge": "5 days · 4 nights · 11–15 November", "subtitle": "Family of 4 · Base: BAIhome Hotel, 355 Fuzhou Rd (People's Square) · Getting around by Didi", "hotel": {"name": "BAIhome Hotel (People's Square Fuzhou Rd)", "lat": 31.234, "lng": 121.4748}}, "days": [{"id": 1, "label": "DAY 1", "date": "Nov 11 (Wed)", "theme": "Arrival · The Bund at night", "stops": [{"time": "16:45", "zone": "Hotel (Fuzhou Rd)", "name": "Arrive hotel, drop luggage", "objective": "Travel", "note": "BAIhome Hotel, 355 Fuzhou Rd", "lat": 31.234, "lng": 121.4748, "short": "Hotel (drop bags)"}, {"time": "17:00–17:45", "zone": "Guangdong Rd (People's Square area)", "name": "Huxilao Longtang Noodle House (Guangdong Road Branch)", "objective": "Eat", "note": "World Trade Tower, 500 Guangdong Rd (1F) — classic Shanghai noodles; clam pork liver noodles is the signature. ~600 m walk from hotel / East Nanjing Rd metro", "lat": 31.23272, "lng": 121.481988, "short": "Huxilao noodles"}, {"time": "18:00–19:30", "zone": "The Bund", "name": "The Bund promenade (Puxi side)", "objective": "Sightseeing", "note": "Stroll the waterfront, view Lujiazui skyline lit up from across the river; ⚡ swap with Day 2 North Bund — decide on the day", "lat": 31.245, "lng": 121.491, "short": "The Bund"}]}, {"id": 2, "label": "DAY 2", "date": "Nov 12 (Thu)", "theme": "West Nanjing → People's Sq → East Nanjing → North Bund", "stops": [{"time": "10:00–10:45", "zone": "West Nanjing", "name": "Amam Bakery (Kerry Centre)", "objective": "Eat", "note": "Pastries + coffee, opens 10:00", "lat": 31.2285, "lng": 121.447, "short": "Amam Bakery"}, {"time": "10:45–12:00", "zone": "West Nanjing", "name": "West Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Quietest part of the day for shopping", "lat": 31.2345, "lng": 121.465, "short": "West Nanjing Rd"}, {"time": "12:00–13:00", "zone": "West Nanjing", "name": "Xie San Bao (74 Nanhui Rd)", "objective": "Eat", "note": "Lunch — crab dishes, Nov is peak crab season", "lat": 31.2368, "lng": 121.4595, "short": "Xie San Bao"}, {"time": "13:30–15:00", "zone": "People's Square", "name": "People's Square (+ Shanghai Museum)", "objective": "Sightseeing", "note": "Bonus landmark, right between the two streets", "lat": 31.2296, "lng": 121.472, "short": "People's Square"}, {"time": "15:00–16:00", "zone": "People's Square", "name": "Shanghai IFC (shopping)", "objective": "Shopping", "note": "Mall next to People's Square — fashion, cosmetics, accessories; 3-min walk", "lat": 31.232, "lng": 121.47, "short": "Shanghai IFC"}, {"time": "16:15–17:30", "zone": "East Nanjing", "name": "East Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Shops open till 22:00, livelier in the evening", "lat": 31.2355, "lng": 121.483, "short": "East Nanjing Rd"}, {"time": "18:00–19:00", "zone": "East Nanjing", "name": "Long Time Ago (830 E. Nanjing Rd)", "objective": "Eat", "note": "Dinner — Xinjiang lamb skewers, night-market vibe, open till 00:00", "lat": 31.2348, "lng": 121.4895, "short": "Long Time Ago"}, {"time": "19:15–20:00", "zone": "North Bund", "name": "North Bund + Waibaidu Bridge", "objective": "Sightseeing", "note": "1933 Old Millfun area, walk the bridge — both skylines lit; ⚡ swap with Day 1 The Bund — decide on the day", "lat": 31.2455, "lng": 121.4925, "short": "North Bund + Bridge"}]}, {"id": 3, "label": "DAY 3", "date": "Nov 13 (Fri)", "theme": "Jing'an → Anfu → Wukang → Huaihai", "stops": [{"time": "09:00–10:45", "zone": "Jing'an Temple", "name": "Jing'an Temple + Park", "objective": "Sightseeing", "note": "Temple + adjacent park in one relaxed block; go early before it fills", "lat": 31.2235, "lng": 121.445, "short": "Jing'an Temple + Park"}, {"time": "11:00–12:00", "zone": "West Nanjing (People's Square)", "name": "Rged Ground Beef & Rice (Raffles City 6F)", "objective": "Eat", "note": "MUST-GO — Japanese hamburg-steak rice (肉肉大米); signature cheese hamburg steak. 6F Raffles City 人广来福士, 327 W. Nanjing Rd, People's Square (metro Exit 15); daily 11:00–21:30. ~500 m from hotel / 10 min walk", "lat": 31.2345, "lng": 121.4685, "short": "Rged (Raffles City)"}, {"time": "12:15–13:00", "zone": "Anfu Road", "name": "13DE MARZO Café (322 Anfu Rd)", "objective": "Eat", "note": "Viral teddy-bear café, bear on every drink, closes 18:00, no seating", "lat": 31.2133, "lng": 121.4401, "short": "13DE MARZO Café"}, {"time": "13:00–14:00", "zone": "Anfu Road", "name": "Anfu Rd stroll", "objective": "Shopping", "note": "Trendy street, cafés, shops", "lat": 31.214, "lng": 121.434, "short": "Anfu Rd"}, {"time": "14:00–15:15", "zone": "Wukang Road", "name": "Wukang Rd", "objective": "Sightseeing", "note": "Plane-tree avenue; walk south, end at Wukang Mansion", "lat": 31.2118, "lng": 121.4405, "short": "Wukang Rd"}, {"time": "15:15–17:15", "zone": "FFC", "name": "Huaihai Middle Rd", "objective": "Shopping", "note": "2h of shops, cafés & bakeries — BSF Pastry pork-floss buns included; walk east", "lat": 31.2178, "lng": 121.459, "short": "Huaihai Rd"}, {"time": "18:00–19:00", "zone": "Joy City (Qufu Rd)", "name": "Grandma's Home 外婆家 (Joy City 7F)", "objective": "Eat", "note": "MUST-GO — Jiangsu-Zhejiang cuisine, family-friendly. Joy City branch = only Wai Po Jia open in central Shanghai (818 Plaza branch closed). 180 Qufu Rd, Joy City South Tower 7F, by Qufu Rd metro Exit 1; dinner 16:30–21:00, high chairs. ~1.0 km from Huaihai's east end / 5 min Didi", "lat": 31.242849, "lng": 121.47187, "short": "Grandma's Home (Joy City)"}]}, {"id": 4, "label": "DAY 4", "date": "Nov 14 (Sat)", "theme": "Yu Garden → Xintiandi → Tianzifang", "stops": [{"time": "10:00–11:30", "zone": "Yu Garden", "name": "Yu Garden + City God Temple", "objective": "Sightseeing", "note": "MUST-GO — morning = fewer crowds; 20-min Didi from hotel", "lat": 31.2256, "lng": 121.4922, "short": "Yu Garden"}, {"time": "11:45–12:45", "zone": "Old Town / Yu Garden", "name": "Lai Lai Xiao Long (504 Tianjin Rd)", "objective": "Eat", "note": "Lunch — crab-roe xiaolongbao, queue likely, arrive by 12:00", "lat": 31.2385, "lng": 121.4845, "short": "Lai Lai Xiao Long"}, {"time": "13:00–15:00", "zone": "Xintiandi", "name": "Xintiandi", "objective": "Shopping", "note": "Shikumen lanes, shops, cafés", "lat": 31.219, "lng": 121.4745, "short": "Xintiandi"}, {"time": "15:15–16:45", "zone": "Xintiandi / Tianzifang", "name": "Tianzifang", "objective": "Shopping", "note": "M alleys, best before dark", "lat": 31.2103, "lng": 121.4715, "short": "Tianzifang"}, {"time": "18:00–19:00", "zone": "Xintiandi", "name": "Fei Da Chu (Xintiandi Plaza F4)", "objective": "Eat", "note": "Dinner — Hunan cuisine; book or arrive by 17:45", "lat": 31.2205, "lng": 121.4755, "short": "Fei Da Chu"}, {"time": "19:15–20:30", "zone": "Xintiandi", "name": "Xintiandi at night", "objective": "Sightseeing", "note": "Lanes lit up, café or late drink", "lat": 31.2195, "lng": 121.4735, "short": "Xintiandi (night)"}]}, {"id": 5, "label": "DAY 5", "date": "Nov 15 (Sun)", "theme": "Last laps → airport", "stops": [{"time": "08:30–09:30", "zone": "Hotel / People's Square", "name": "Breakfast near hotel", "objective": "Eat", "note": "Sleep in, easy start", "lat": 31.2345, "lng": 121.477, "short": "Breakfast"}, {"time": "09:30–11:00", "zone": "Hotel / People's Square", "name": "Bakery run near hotel (BSF / Amam)", "objective": "Eat", "note": "Buy take-home pastries", "lat": 31.235, "lng": 121.4785, "short": "Bakery run"}, {"time": "11:30–12:15", "zone": "East Nanjing", "name": "Light lunch (E. Nanjing Rd)", "objective": "Eat", "note": "Any spot on the street", "lat": 31.2355, "lng": 121.481, "short": "Light lunch"}, {"time": "12:45–14:00", "zone": "Airport", "name": "Didi to PVG", "objective": "Travel", "note": "Leave 12:45 — lull before evening rush; 6-seater for 4 + luggage", "lat": 31.1434, "lng": 121.8052, "short": "Didi to PVG", "offmap": true}, {"time": "14:15–15:45", "zone": "Airport", "name": "Check-in + security", "objective": "Travel", "note": "International flight — 2.5h buffer before 17:15", "lat": 31.1434, "lng": 121.8052, "short": "Check-in", "offmap": true}, {"time": "17:15", "zone": "Airport", "name": "Flight takes off", "objective": "Travel", "note": "Safe travels!", "lat": 31.1434, "lng": 121.8052, "short": "Flight 17:15", "offmap": true}]}]};
+const BACKUP_BRANCHES = [
+  { name: "Long Time Ago (818 Plaza B1)", short: "Long Time Ago (818 Plaza)", lat: 31.23102, lng: 121.460984, main: "Long Time Ago (830 E. Nanjing Rd)", note: "Branch swap \u2014 same food, different queue", label: "above" },
+  { name: "Rged (Jiuguang, 189 W. Nanjing Rd)", short: "Rged (Jiuguang)", lat: 31.2305, lng: 121.4585, main: "Rged Ground Beef & Rice (Raffles City 6F)", note: "Branch swap \u2014 same food, different queue", label: "below" }
+];
+const BACKUPS = {
+  "Huxilao Longtang Noodle House (Guangdong Road Branch)": [
+    { name: "Lai Lai Xiao Long", day: "D4 lunch", dist: "0.7 km" },
+    { name: "Long Time Ago", day: "D2 dinner", dist: "0.8 km" },
+    { name: "Rged", day: "D3 lunch", dist: "1.3 km" },
+    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.5 km" },
+    { name: "Fei Da Chu", day: "D4 dinner", dist: "1.5 km" }
+  ],
+  "Xie San Bao (74 Nanhui Rd)": [
+    { name: "Rged", day: "D3 lunch", dist: "0.9 km" },
+    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.4 km" }
+  ],
+  "Long Time Ago (830 E. Nanjing Rd)": [
+    { name: "Long Time Ago (818 Plaza B1)", day: "D2", dist: "2.1 km", branch: true },
+    { name: "Lai Lai Xiao Long", day: "D4 lunch", dist: "0.6 km" },
+    { name: "Huxilao", day: "D1", dist: "0.8 km" },
+    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.9 km" },
+    { name: "Rged", day: "D3 lunch", dist: "2.0 km" }
+  ],
+  "Rged Ground Beef & Rice (Raffles City 6F)": [
+    { name: "Rged (Jiuguang, 189 W. Nanjing Rd)", day: "D3", dist: "1.1 km", branch: true },
+    { name: "Long Time Ago (818 Plaza B1)", day: "D2", dist: "0.8 km", branch: true },
+    { name: "Xie San Bao", day: "D2 lunch", dist: "0.9 km" },
+    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.0 km" },
+    { name: "Huxilao", day: "D1", dist: "1.3 km" },
+    { name: "Lai Lai Xiao Long", day: "D4 lunch", dist: "1.6 km" },
+    { name: "Fei Da Chu", day: "D4 dinner", dist: "1.7 km" },
+    { name: "Long Time Ago", day: "D2 dinner", dist: "2.0 km" }
+  ],
+  "Grandma's Home \u5916\u5a46\u5bb6 (Joy City 7F)": [
+    { name: "Rged", day: "D3 lunch", dist: "1.0 km" },
+    { name: "Lai Lai Xiao Long", day: "D4 lunch", dist: "1.3 km" },
+    { name: "Xie San Bao", day: "D2 lunch", dist: "1.4 km" },
+    { name: "Huxilao", day: "D1", dist: "1.5 km" },
+    { name: "Long Time Ago (818 Plaza B1)", day: "D2", dist: "1.7 km", branch: true },
+    { name: "Long Time Ago", day: "D2 dinner", dist: "1.9 km" }
+  ],
+  "Lai Lai Xiao Long (504 Tianjin Rd)": [
+    { name: "Long Time Ago", day: "D2 dinner", dist: "0.6 km" },
+    { name: "Huxilao", day: "D1", dist: "0.7 km" },
+    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.3 km" },
+    { name: "Rged", day: "D3 lunch", dist: "1.6 km" }
+  ],
+  "Fei Da Chu (Xintiandi Plaza F4)": [
+    { name: "Huxilao", day: "D1", dist: "1.5 km" },
+    { name: "Rged", day: "D3 lunch", dist: "1.7 km" },
+    { name: "Long Time Ago (818 Plaza B1)", day: "D2", dist: "1.8 km", branch: true },
+    { name: "Rged (Jiuguang, 189 W. Nanjing Rd)", day: "D3", dist: "2.0 km", branch: true }
+  ]
+};
+function backupsFor(name) { return BACKUPS[name] || null; }
+function findStop(name) {
+  for (const d of DATA.days) for (const s of d.stops) if (s.name === name) return s;
+  return null;
+}
+function backupListHTML(name) {
+  const list = backupsFor(name);
+  if (!list) return '<div class="backups-note">No backups for this stop.</div>';
+  let h = '<div class="backups-list">';
+  list.forEach(b => {
+    h += '<div class="bitem"><span class="bname">'+(b.branch?'\u2605 ':'')+b.name+'</span><span class="bday">'+b.day+'</span>'
+       + (b.branch?'<span class="bbranch">branch swap</span>':'')
+       + '<span class="bdist">'+b.dist+'</span></div>';
+  });
+  h += '</div>';
+  const br = BACKUP_BRANCHES.find(x => x.main === name);
+  if (br) h += '<div class="backups-note">\u2605 = branch swap (same food, different queue) \u2014 '+br.short+' is pinned on the map.</div>';
+  return h;
+}
 const W = 1000, H = 800;
 const DAY_COLORS = ['#e0409a','#2f8f6b','#e07b2f','#5b7fb5','#9b59b6'];
 let hideEat = false;
@@ -226,6 +327,7 @@ function buildBase() {
 }
 
 /* ---------- hotel marker ---------- */
+let hotelLabelBox = null;
 function buildHotel() {
   const [hx,hy] = project(DATA.trip.hotel.lat, DATA.trip.hotel.lng);
   const g = el('g', { id:'hotel' }, svg);
@@ -234,13 +336,15 @@ function buildHotel() {
   t.textContent = 'H';
   const lbl = el('text', { x:hx, y:hy-18, fill:'#3a3a3a','font-size':11,'font-weight':700,'text-anchor':'middle' }, g);
   lbl.textContent = 'BAIhome (hotel)';
+  hotelLabelBox = { x: hx - 54, y: hy - 28, w: 108, h: 14 };
 }
 
 /* ---------- all-days layer (background, dim) ---------- */
-let allDaysLayer, selectedLayer;
+let allDaysLayer, selectedLayer, backupLayer;
 function initLayers() {
   allDaysLayer = el('g', { id:'allDays' }, svg);
   selectedLayer = el('g', { id:'selected' }, svg);
+  backupLayer = el('g', { id:'backups' }, svg);
 }
 
 function getStops(day) {
@@ -284,9 +388,20 @@ function drawSelected(day) {
     const ang = Math.atan2(stops[i+1].py-stops[i].py, stops[i+1].px-stops[i].px)*180/Math.PI;
     el('path', { d:'M -6 -6 L 8 0 L -6 6 Z', fill:color, transform:'translate('+mx+' '+my+') rotate('+ang+')' }, selectedLayer);
   }
-  const placed = [];
+  const [hpx, hpy] = project(DATA.trip.hotel.lat, DATA.trip.hotel.lng);
+  const placed = hotelLabelBox ? [hotelLabelBox, { x: hpx - 11, y: hpy - 11, w: 22, h: 22 }] : [];
   stops.forEach((s, i) => {
-    el('rect', { x:s.px-11, y:s.py-11, width:22, height:22, rx:5, fill:color, stroke:'#fff','stroke-width':2 }, selectedLayer);
+    const stopRect = el('rect', { x:s.px-11, y:s.py-11, width:22, height:22, rx:5, fill:color, stroke:'#fff','stroke-width':2, style:'cursor:pointer' }, selectedLayer);
+    stopRect.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openSchematicPopup(s, s.px, s.py);
+      const card = document.querySelector('.stop[data-i="'+i+'"]');
+      if (card) {
+        const det = card.querySelector('.detail');
+        if (det) det.style.display = 'block';
+        card.scrollIntoView({ behavior:'smooth', block:'center' });
+      }
+    });
     const n = el('text', { x:s.px, y:s.py+4, fill:'#fff','font-size':11.5,'font-weight':700,'text-anchor':'middle' }, selectedLayer);
     n.textContent = i+1;
     const w = s.short.length * 6.1 + 16, h = 21;
@@ -307,6 +422,63 @@ function drawSelected(day) {
   });
 }
 
+/* ---------- backup branches (schematic) ---------- */
+function drawBackupBranches() {
+  backupLayer.innerHTML = '';
+  if (hideEat) return;
+  BACKUP_BRANCHES.forEach(b => {
+    const [x, y] = project(b.lat, b.lng);
+    const g = el('g', { 'data-branch': b.name, style: 'cursor:pointer' }, backupLayer);
+    el('circle', { cx:x, cy:y, r:10, fill:'#fff', stroke:'#e07b2f', 'stroke-width':2, 'stroke-dasharray':'4 3' }, g);
+    const t = el('text', { x:x, y:y+3.5, fill:'#e07b2f', 'font-size':10, 'font-weight':700, 'text-anchor':'middle' }, g);
+    t.textContent = 'B';
+    const lblY = (b.label === 'below') ? y + 22 : y - 14;
+    const lbl = el('text', { x:x, y:lblY, fill:'#e07b2f', 'font-size':9.5, 'font-weight':700, 'text-anchor':'middle' }, g);
+    lbl.textContent = b.short;
+    g.addEventListener('click', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      openSchematicPopup(b, x, y);
+    });
+  });
+}
+
+/* ---------- schematic popup ---------- */
+let schemPopup = null;
+function closeSchematicPopup() {
+  if (schemPopup) { schemPopup.style.display = 'none'; schemPopup = null; }
+}
+function openSchematicPopup(stop, px, py) {
+  const wrap = document.querySelector('.mapwrap');
+  if (!schemPopup) schemPopup = document.getElementById('schemPopup');
+  const bkName = stop.main || stop.name;
+  const bk = backupsFor(bkName);
+  let h = '<div class="sp-head"><div><div class="sp-name">'+stop.name+'</div>'
+        + '<div class="sp-meta">'+(stop.main ? ('Backup branch \u2014 backs up: '+stop.main) : ((stop.time||'')+(stop.zone?' \u00b7 '+stop.zone:'')))+'</div></div>'
+        + '<button class="sp-close" id="spClose">\u00d7</button></div>';
+  if (bk) h += '<button class="backups-btn" id="spBackups">Backups ('+bk.length+')</button><div id="spList" style="display:none">'+backupListHTML(bkName)+'</div>';
+  schemPopup.innerHTML = h;
+  schemPopup.style.display = 'block';
+  const r = (stop.px !== undefined) ? [stop.px, stop.py] : [px, py];
+  const rect = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+  const sx = rect.left - wr.left + (r[0] - vb.x) / vb.w * rect.width;
+  const sy = rect.top - wr.top + (r[1] - vb.y) / vb.h * rect.height;
+  let left = sx + 16, top = sy - 10;
+  if (left + 260 > wr.width) left = sx - 266;
+  if (left < 6) left = 6;
+  if (top + 140 > wr.height) top = wr.height - 150;
+  if (top < 6) top = 6;
+  schemPopup.style.left = left + 'px';
+  schemPopup.style.top = top + 'px';
+  document.getElementById('spClose').addEventListener('click', closeSchematicPopup);
+  const bb = document.getElementById('spBackups');
+  if (bb) bb.addEventListener('click', function() {
+    const l = document.getElementById('spList');
+    l.style.display = (l.style.display === 'none') ? 'block' : 'none';
+  });
+}
+svg.addEventListener('click', function() { closeSchematicPopup(); });
+
 /* ---------- timeline ---------- */
 function renderTimeline(day) {
   const tl = document.getElementById('timeline');
@@ -325,9 +497,34 @@ function renderTimeline(day) {
       '<div class="name">'+s.name+'</div>' +
       '<span class="zone">📍 '+s.zone+'</span>' +
       (s.note ? '<div class="note">'+s.note+'</div>' : '');
+    if (s.objective === 'Eat') {
+      const det = document.createElement('div');
+      det.className = 'detail';
+      det.style.display = 'none';
+      det.innerHTML =
+        '<div class="dhead"><span class="dname">'+s.name+'</span><span class="dtime">'+s.time+'</span><span class="mustgo">MUST-GO</span></div>' +
+        '<span class="dzone">'+s.zone+'</span>' +
+        (s.note ? '<div class="dnote">'+s.note+'</div>' : '') +
+        (backupsFor(s.name) ? '<button class="backups-btn">Backups ('+backupsFor(s.name).length+')</button><div class="backups-list" style="display:none">'+backupListHTML(s.name)+'</div>' : '');
+      d.appendChild(det);
+    }
     tl.appendChild(d);
   });
 }
+
+/* ---------- timeline click (delegated, bound once) ---------- */
+document.getElementById('timeline').addEventListener('click', function(e) {
+  const card = e.target.closest('.stop');
+  if (!card) return;
+  const det = card.querySelector('.detail');
+  if (!det) return;
+  if (e.target.closest('.backups-btn')) {
+    const list = det.querySelector('.backups-list');
+    if (list) list.style.display = (list.style.display === 'none') ? 'block' : 'none';
+    return;
+  }
+  det.style.display = (det.style.display === 'none') ? 'block' : 'none';
+});
 
 /* ---------- tabs ---------- */
 function buildTabs() {
@@ -347,6 +544,7 @@ function selectDay(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', +t.dataset.id === id));
   drawSelected(day);
   renderTimeline(day);
+  drawBackupBranches();
   if (realMap && document.getElementById('realMap').style.display !== 'none') drawRealMap(day);
   const parts = (hideEat ? day.stops.filter(s => s.objective !== 'Eat') : day.stops).map(s => s.short);
   document.getElementById('summary').innerHTML =
@@ -385,7 +583,36 @@ function drawRealMap(day) {
       className: ''
     });
     const m = L.marker([s.lat, s.lng], { icon: icon }).addTo(realMap);
-    m.bindPopup('<b>'+(i+1)+'. '+s.name+'</b><br><i>'+s.time+'</i><br>'+s.zone);
+    const bk = backupsFor(s.name);
+    let ph = '<b>'+(i+1)+'. '+s.name+'</b><br><i>'+s.time+'</i><br>'+s.zone;
+    if (bk) ph += '<br><button class="backups-btn" id="rpBackups">Backups ('+bk.length+')</button><div id="rpList" style="display:none">'+backupListHTML(s.name)+'</div>';
+    m.bindPopup(ph);
+    m.on('popupopen', function(e) {
+      const bb = e.popup.getElement().querySelector('#rpBackups');
+      if (bb) bb.addEventListener('click', function() {
+        const l = e.popup.getElement().querySelector('#rpList');
+        l.style.display = (l.style.display === 'none') ? 'block' : 'none';
+      });
+    });
+    realMarkers.push(m);
+  });
+  BACKUP_BRANCHES.forEach(b => {
+    const icon = L.divIcon({
+      html: '<div style="width:24px;height:24px;border-radius:50%;background:#fff;border:2.5px dashed #e07b2f;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#e07b2f;box-shadow:0 1px 4px rgba(0,0,0,.3)">B</div>',
+      className: ''
+    });
+    const m = L.marker([b.lat, b.lng], { icon: icon }).addTo(realMap);
+    const bk = backupsFor(b.main);
+    let ph = '<b>'+b.name+'</b><br><i>Backup branch \u2014 same food, different queue</i><br>Backs up: '+b.main;
+    if (bk) ph += '<br><button class="backups-btn" id="bpBackups">Backups ('+bk.length+')</button><div id="bpList" style="display:none">'+backupListHTML(b.main)+'</div>';
+    m.bindPopup(ph);
+    m.on('popupopen', function(e) {
+      const bb = e.popup.getElement().querySelector('#bpBackups');
+      if (bb) bb.addEventListener('click', function() {
+        const l = e.popup.getElement().querySelector('#bpList');
+        l.style.display = (l.style.display === 'none') ? 'block' : 'none';
+      });
+    });
     realMarkers.push(m);
   });
   if (pts.length > 0) realMap.fitBounds(pts, { padding: [40, 40] });
@@ -489,6 +716,7 @@ document.getElementById('toggleEat').addEventListener('click', function() {
   drawAllDays();
   drawSelected(day);
   renderTimeline(day);
+  drawBackupBranches();
   if (realMap && document.getElementById('realMap').style.display !== 'none') drawRealMap(day);
   const parts = (hideEat ? day.stops.filter(s => s.objective !== 'Eat') : day.stops).map(s => s.short);
   document.getElementById('summary').innerHTML =
@@ -506,6 +734,7 @@ buildHotel();
 drawAllDays();
 buildTabs();
 selectDay(1);
+drawBackupBranches();
 </script>
 </body>
 </html>
