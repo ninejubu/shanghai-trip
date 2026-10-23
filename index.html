@@ -116,8 +116,8 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
 .mapwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 #map { cursor: grab; }
 #realMap { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+.map-toolbar { display: flex; justify-content: flex-start; margin-bottom: 8px; }
 .map-view-toggle {
-  position: absolute; top: 12px; left: 12px; z-index: 10;
   display: flex; gap: 4px; background: var(--card); border-radius: 6px;
   border: 1px solid var(--border); padding: 3px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
 }
@@ -153,6 +153,16 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
   letter-spacing: 0.5px; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
 }
 .summary .arrow { color: var(--accent); font-weight: 800; }
+
+/* plan tabs (main / relaxed) */
+.plan-tabs { display: flex; gap: 8px; justify-content: center; margin: 0 0 10px; }
+.plan-tab {
+  border: 2px solid var(--border); background: var(--card); color: var(--muted);
+  font-weight: 700; font-size: 12px; letter-spacing: 0.5px; padding: 8px 20px;
+  border-radius: 999px; cursor: pointer; transition: all .15s ease; font-family: inherit;
+}
+.plan-tab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.plan-tab:hover:not(.active) { background: #f5efe6; }
 </style>
 </head>
 <body>
@@ -163,18 +173,21 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
     <div class="subtitle" id="tripSub"></div>
   </header>
 
+  <div class="plan-tabs" id="planTabs"></div>
   <div class="tabs" id="tabs"></div>
   <div style="text-align:center;margin-bottom:14px">
     <button class="toggle-eat" id="toggleEat">Hide restaurants</button>
   </div>
 
   <div class="main">
+    <div class="map-toolbar">
+      <div class="map-view-toggle">
+        <button class="map-view-btn active" id="viewSchematic">Schematic</button>
+        <button class="map-view-btn" id="viewReal">Real Map</button>
+      </div>
+    </div>
     <div class="mapbox">
       <div class="mapwrap">
-        <div class="map-view-toggle">
-          <button class="map-view-btn active" id="viewSchematic">Schematic</button>
-          <button class="map-view-btn" id="viewReal">Real Map</button>
-        </div>
         <div class="zoom-controls">
           <button class="zoom-btn" id="zoomIn">+</button>
           <button class="zoom-btn" id="zoomOut">−</button>
@@ -200,61 +213,17 @@ h1 { font-size: 48px; font-weight: 800; letter-spacing: 6px; color: var(--accent
 </div>
 
 <script>
-const DATA = {"trip": {"title": "SHANGHAI", "badge": "5 days · 4 nights · 11–15 November", "subtitle": "Family of 4 · Base: BAIhome Hotel, 355 Fuzhou Rd (People's Square) · Getting around by Didi", "hotel": {"name": "BAIhome Hotel (People's Square Fuzhou Rd)", "lat": 31.234, "lng": 121.4748}}, "days": [{"id": 1, "label": "DAY 1", "date": "Nov 11 (Wed)", "theme": "Arrival · The Bund at night", "stops": [{"time": "16:45", "zone": "Hotel (Fuzhou Rd)", "name": "Arrive hotel, drop luggage", "objective": "Travel", "note": "BAIhome Hotel, 355 Fuzhou Rd", "lat": 31.234, "lng": 121.4748, "short": "Hotel (drop bags)"}, {"time": "17:00–17:45", "zone": "Guangdong Rd (People's Square area)", "name": "Huxilao Longtang Noodle House (Guangdong Road Branch)", "objective": "Eat", "note": "World Trade Tower, 500 Guangdong Rd (1F) — classic Shanghai noodles; clam pork liver noodles is the signature. ~600 m walk from hotel / East Nanjing Rd metro", "lat": 31.23272, "lng": 121.481988, "short": "Huxilao noodles"}, {"time": "18:00–19:30", "zone": "The Bund", "name": "The Bund promenade (Puxi side)", "objective": "Sightseeing", "note": "Stroll the waterfront, view Lujiazui skyline lit up from across the river; ⚡ swap with Day 2 North Bund — decide on the day", "lat": 31.245, "lng": 121.491, "short": "The Bund"}]}, {"id": 2, "label": "DAY 2", "date": "Nov 12 (Thu)", "theme": "West Nanjing → People's Sq → East Nanjing → 818 Plaza → North Bund", "stops": [{"time": "10:00–10:45", "zone": "West Nanjing", "name": "Amam Bakery (Kerry Centre)", "objective": "Eat", "note": "Pastries + coffee, opens 10:00", "lat": 31.2285, "lng": 121.447, "short": "Amam Bakery"}, {"time": "10:45–12:00", "zone": "West Nanjing", "name": "West Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Quietest part of the day for shopping", "lat": 31.2345, "lng": 121.465, "short": "West Nanjing Rd"}, {"time": "12:00–13:00", "zone": "West Nanjing", "name": "Xie San Bao (74 Nanhui Rd)", "objective": "Eat", "note": "Lunch — crab dishes, Nov is peak crab season", "lat": 31.2368, "lng": 121.4595, "short": "Xie San Bao"}, {"time": "13:30–15:00", "zone": "People's Square", "name": "People's Square (+ Shanghai Museum)", "objective": "Sightseeing", "note": "Bonus landmark, right between the two streets", "lat": 31.2296, "lng": 121.472, "short": "People's Square"}, {"time": "15:00–16:00", "zone": "People's Square", "name": "Shanghai IFC (shopping)", "objective": "Shopping", "note": "Mall next to People's Square — fashion, cosmetics, accessories; 3-min walk", "lat": 31.232, "lng": 121.47, "short": "Shanghai IFC"}, {"time": "16:15–17:30", "zone": "East Nanjing", "name": "East Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Shops open till 22:00, livelier in the evening", "lat": 31.2355, "lng": 121.483, "short": "East Nanjing Rd"}, {"time": "18:00–19:00", "zone": "Jing'an (818 Plaza)", "name": "Long Time Ago (818 Plaza B1)", "objective": "Eat", "note": "Dinner — Xinjiang lamb skewers, night-market vibe. 818 Plaza B1, 818 W. Nanjing Rd (Jing'an) — shorter queue than the E. Nanjing Rd branch; ~¥97/person, 4.8★; open 11:00–14:00 & 16:30–00:00; Didi from E. Nanjing Rd ~5 min", "lat": 31.23102, "lng": 121.460984, "short": "Long Time Ago"}, {"time": "19:15–20:00", "zone": "North Bund", "name": "North Bund + Waibaidu Bridge", "objective": "Sightseeing", "note": "1933 Old Millfun area, walk the bridge — both skylines lit; ⚡ swap with Day 1 The Bund — decide on the day", "lat": 31.2455, "lng": 121.4925, "short": "North Bund + Bridge"}]}, {"id": 3, "label": "DAY 3", "date": "Nov 13 (Fri)", "theme": "Jing'an → Anfu → Wukang → Huaihai", "stops": [{"time": "09:00–10:45", "zone": "Jing'an Temple", "name": "Jing'an Temple + Park", "objective": "Sightseeing", "note": "Temple + adjacent park in one relaxed block; go early before it fills", "lat": 31.2235, "lng": 121.445, "short": "Jing'an Temple + Park"}, {"time": "11:00–12:00", "zone": "West Nanjing (People's Square)", "name": "Rged Ground Beef & Rice (Raffles City 6F)", "objective": "Eat", "note": "MUST-GO — Japanese hamburg-steak rice (肉肉大米); signature cheese hamburg steak. 6F Raffles City 人广来福士, 327 W. Nanjing Rd, People's Square (metro Exit 15); daily 11:00–21:30. ~500 m from hotel / 10 min walk", "lat": 31.2345, "lng": 121.4685, "short": "Rged (Raffles City)"}, {"time": "12:15–13:00", "zone": "Anfu Road", "name": "13DE MARZO Café (322 Anfu Rd)", "objective": "Eat", "note": "Viral teddy-bear café, bear on every drink, closes 18:00, no seating", "lat": 31.2133, "lng": 121.4401, "short": "13DE MARZO Café"}, {"time": "13:00–14:00", "zone": "Anfu Road", "name": "Anfu Rd stroll", "objective": "Shopping", "note": "Trendy street, cafés, shops", "lat": 31.214, "lng": 121.434, "short": "Anfu Rd"}, {"time": "14:00–15:15", "zone": "Wukang Road", "name": "Wukang Rd", "objective": "Sightseeing", "note": "Plane-tree avenue; walk south, end at Wukang Mansion", "lat": 31.2118, "lng": 121.4405, "short": "Wukang Rd"}, {"time": "15:15–17:15", "zone": "FFC", "name": "Huaihai Middle Rd", "objective": "Shopping", "note": "2h of shops, cafés & bakeries — BSF Pastry pork-floss buns included; walk east", "lat": 31.2178, "lng": 121.459, "short": "Huaihai Rd"}, {"time": "18:00–19:00", "zone": "Joy City (Qufu Rd)", "name": "Grandma's Home 外婆家 (Joy City 7F)", "objective": "Eat", "note": "MUST-GO — Jiangsu-Zhejiang cuisine, family-friendly. Joy City branch = only Wai Po Jia open in central Shanghai (818 Plaza branch closed). 180 Qufu Rd, Joy City South Tower 7F, by Qufu Rd metro Exit 1; dinner 16:30–21:00, high chairs. ~1.0 km from Huaihai's east end / 5 min Didi", "lat": 31.242849, "lng": 121.47187, "short": "Grandma's Home (Joy City)"}]}, {"id": 4, "label": "DAY 4", "date": "Nov 14 (Sat)", "theme": "Yu Garden → Xintiandi → Tianzifang", "stops": [{"time": "10:00–11:30", "zone": "Yu Garden", "name": "Yu Garden + City God Temple", "objective": "Sightseeing", "note": "MUST-GO — morning = fewer crowds; 20-min Didi from hotel", "lat": 31.2256, "lng": 121.4922, "short": "Yu Garden"}, {"time": "11:45–12:45", "zone": "Old Town / Yu Garden", "name": "Lai Lai Xiao Long (504 Tianjin Rd)", "objective": "Eat", "note": "Lunch — crab-roe xiaolongbao, queue likely, arrive by 12:00", "lat": 31.2385, "lng": 121.4845, "short": "Lai Lai Xiao Long"}, {"time": "13:00–15:00", "zone": "Xintiandi", "name": "Xintiandi", "objective": "Shopping", "note": "Shikumen lanes, shops, cafés", "lat": 31.219, "lng": 121.4745, "short": "Xintiandi"}, {"time": "15:15–16:45", "zone": "Xintiandi / Tianzifang", "name": "Tianzifang", "objective": "Shopping", "note": "M alleys, best before dark", "lat": 31.2103, "lng": 121.4715, "short": "Tianzifang"}, {"time": "18:00–19:00", "zone": "Xintiandi", "name": "Fei Da Chu (Xintiandi Plaza F4)", "objective": "Eat", "note": "Dinner — Hunan cuisine; book or arrive by 17:45", "lat": 31.2205, "lng": 121.4755, "short": "Fei Da Chu"}, {"time": "19:15–20:30", "zone": "Xintiandi", "name": "Xintiandi at night", "objective": "Sightseeing", "note": "Lanes lit up, café or late drink", "lat": 31.2195, "lng": 121.4735, "short": "Xintiandi (night)"}]}, {"id": 5, "label": "DAY 5", "date": "Nov 15 (Sun)", "theme": "Last laps → airport", "stops": [{"time": "08:30–09:30", "zone": "Hotel / People's Square", "name": "Breakfast near hotel", "objective": "Eat", "note": "Sleep in, easy start", "lat": 31.2345, "lng": 121.477, "short": "Breakfast"}, {"time": "09:30–11:00", "zone": "Hotel / People's Square", "name": "Bakery run near hotel (BSF / Amam)", "objective": "Eat", "note": "Buy take-home pastries", "lat": 31.235, "lng": 121.4785, "short": "Bakery run"}, {"time": "11:30–12:15", "zone": "East Nanjing", "name": "Light lunch (E. Nanjing Rd)", "objective": "Eat", "note": "Any spot on the street", "lat": 31.2355, "lng": 121.481, "short": "Light lunch"}, {"time": "12:45–14:00", "zone": "Airport", "name": "Didi to PVG", "objective": "Travel", "note": "Leave 12:45 — lull before evening rush; 6-seater for 4 + luggage", "lat": 31.1434, "lng": 121.8052, "short": "Didi to PVG", "offmap": true}, {"time": "14:15–15:45", "zone": "Airport", "name": "Check-in + security", "objective": "Travel", "note": "International flight — 2.5h buffer before 17:15", "lat": 31.1434, "lng": 121.8052, "short": "Check-in", "offmap": true}, {"time": "17:15", "zone": "Airport", "name": "Flight takes off", "objective": "Travel", "note": "Safe travels!", "lat": 31.1434, "lng": 121.8052, "short": "Flight 17:15", "offmap": true}]}]};
+const DATA = {"trip": {"title": "SHANGHAI", "badge": "5 days · 4 nights · 11–15 November", "subtitle": "Family of 4 · Base: BAIhome Hotel, 355 Fuzhou Rd (People's Square) · Getting around by Didi", "hotel": {"name": "BAIhome Hotel (People's Square Fuzhou Rd)", "lat": 31.234, "lng": 121.4748}}, "plans": {"main": {"label": "Main plan", "days": [{"id": 1, "label": "DAY 1", "date": "Nov 11 (Wed)", "theme": "Arrival · The Bund at night", "stops": [{"time": "16:45", "zone": "Hotel (Fuzhou Rd)", "name": "Arrive hotel, drop luggage", "objective": "Travel", "note": "BAIhome Hotel, 355 Fuzhou Rd", "lat": 31.234, "lng": 121.4748, "short": "Hotel (drop bags)"}, {"time": "17:00–17:45", "zone": "Guangdong Rd (People's Square area)", "name": "Huxilao Longtang Noodle House (Guangdong Road Branch)", "objective": "Eat", "note": "World Trade Tower, 500 Guangdong Rd (1F) — classic Shanghai noodles; clam pork liver noodles is the signature. ~600 m walk from hotel / East Nanjing Rd metro", "lat": 31.23272, "lng": 121.481988, "short": "Huxilao noodles"}, {"time": "18:00–19:30", "zone": "The Bund", "name": "The Bund promenade (Puxi side)", "objective": "Sightseeing", "note": "Stroll the waterfront, view Lujiazui skyline lit up from across the river; ⚡ swap with Day 2 North Bund — decide on the day", "lat": 31.245, "lng": 121.491, "short": "The Bund"}]}, {"id": 2, "label": "DAY 2", "date": "Nov 12 (Thu)", "theme": "West Nanjing → People's Sq → East Nanjing → 818 Plaza → North Bund", "stops": [{"time": "10:00–10:45", "zone": "West Nanjing", "name": "Amam Bakery (Kerry Centre)", "objective": "Eat", "note": "Pastries + coffee, opens 10:00", "lat": 31.2285, "lng": 121.447, "short": "Amam Bakery"}, {"time": "10:45–12:00", "zone": "West Nanjing", "name": "West Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Quietest part of the day for shopping", "lat": 31.2345, "lng": 121.465, "short": "West Nanjing Rd"}, {"time": "12:00–13:00", "zone": "West Nanjing", "name": "Xie San Bao (74 Nanhui Rd)", "objective": "Eat", "note": "Lunch — crab dishes, Nov is peak crab season", "lat": 31.2368, "lng": 121.4595, "short": "Xie San Bao"}, {"time": "13:30–15:00", "zone": "People's Square", "name": "People's Square (+ Shanghai Museum)", "objective": "Sightseeing", "note": "Bonus landmark, right between the two streets", "lat": 31.2296, "lng": 121.472, "short": "People's Square"}, {"time": "15:00–16:00", "zone": "People's Square", "name": "Shanghai IFC (shopping)", "objective": "Shopping", "note": "Mall next to People's Square — fashion, cosmetics, accessories; 3-min walk", "lat": 31.232, "lng": 121.47, "short": "Shanghai IFC"}, {"time": "16:15–17:30", "zone": "East Nanjing", "name": "East Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Shops open till 22:00, livelier in the evening", "lat": 31.2355, "lng": 121.483, "short": "East Nanjing Rd"}, {"time": "18:00–19:00", "zone": "Jing'an (818 Plaza)", "name": "Long Time Ago (818 Plaza B1)", "objective": "Eat", "note": "Dinner — Xinjiang lamb skewers, night-market vibe. 818 Plaza B1, 818 W. Nanjing Rd (Jing'an) — shorter queue than the E. Nanjing Rd branch; ~¥97/person, 4.8★; open 11:00–14:00 & 16:30–00:00; Didi from E. Nanjing Rd ~5 min", "lat": 31.23102, "lng": 121.460984, "short": "Long Time Ago"}, {"time": "19:15–20:00", "zone": "North Bund", "name": "North Bund + Waibaidu Bridge", "objective": "Sightseeing", "note": "1933 Old Millfun area, walk the bridge — both skylines lit; ⚡ swap with Day 1 The Bund — decide on the day", "lat": 31.2455, "lng": 121.4925, "short": "North Bund + Bridge"}]}, {"id": 3, "label": "DAY 3", "date": "Nov 13 (Fri)", "theme": "Jing'an → Anfu → Wukang → Huaihai", "stops": [{"time": "09:00–10:45", "zone": "Jing'an Temple", "name": "Jing'an Temple + Park", "objective": "Sightseeing", "note": "Temple + adjacent park in one relaxed block; go early before it fills", "lat": 31.2235, "lng": 121.445, "short": "Jing'an Temple + Park"}, {"time": "11:00–12:00", "zone": "West Nanjing (People's Square)", "name": "Rged Ground Beef & Rice (Raffles City 6F)", "objective": "Eat", "note": "MUST-GO — Japanese hamburg-steak rice (肉肉大米); signature cheese hamburg steak. 6F Raffles City 人广来福士, 327 W. Nanjing Rd, People's Square (metro Exit 15); daily 11:00–21:30. ~500 m from hotel / 10 min walk", "lat": 31.2345, "lng": 121.4685, "short": "Rged (Raffles City)"}, {"time": "12:15–13:00", "zone": "Anfu Road", "name": "13DE MARZO Café (322 Anfu Rd)", "objective": "Eat", "note": "Viral teddy-bear café, bear on every drink, closes 18:00, no seating", "lat": 31.2133, "lng": 121.4401, "short": "13DE MARZO Café"}, {"time": "13:00–14:00", "zone": "Anfu Road", "name": "Anfu Rd stroll", "objective": "Shopping", "note": "Trendy street, cafés, shops", "lat": 31.214, "lng": 121.434, "short": "Anfu Rd"}, {"time": "14:00–15:15", "zone": "Wukang Road", "name": "Wukang Rd", "objective": "Sightseeing", "note": "Plane-tree avenue; walk south, end at Wukang Mansion", "lat": 31.2118, "lng": 121.4405, "short": "Wukang Rd"}, {"time": "15:15–17:15", "zone": "FFC", "name": "Huaihai Middle Rd", "objective": "Shopping", "note": "2h of shops, cafés & bakeries — BSF Pastry pork-floss buns included; walk east", "lat": 31.2178, "lng": 121.459, "short": "Huaihai Rd"}, {"time": "18:00–19:00", "zone": "Joy City (Qufu Rd)", "name": "Grandma's Home 外婆家 (Joy City 7F)", "objective": "Eat", "note": "MUST-GO — Jiangsu-Zhejiang cuisine, family-friendly. Joy City branch = only Wai Po Jia open in central Shanghai (818 Plaza branch closed). 180 Qufu Rd, Joy City South Tower 7F, by Qufu Rd metro Exit 1; dinner 16:30–21:00, high chairs. ~1.0 km from Huaihai's east end / 5 min Didi", "lat": 31.242849, "lng": 121.47187, "short": "Grandma's Home (Joy City)"}]}, {"id": 4, "label": "DAY 4", "date": "Nov 14 (Sat)", "theme": "Yu Garden → Xintiandi → Tianzifang", "stops": [{"time": "10:00–11:30", "zone": "Yu Garden", "name": "Yu Garden + City God Temple", "objective": "Sightseeing", "note": "MUST-GO — morning = fewer crowds; 20-min Didi from hotel", "lat": 31.2256, "lng": 121.4922, "short": "Yu Garden"}, {"time": "11:45–12:45", "zone": "Old Town / Yu Garden", "name": "Lai Lai Xiao Long (504 Tianjin Rd)", "objective": "Eat", "note": "Lunch — crab-roe xiaolongbao, queue likely, arrive by 12:00", "lat": 31.2385, "lng": 121.4845, "short": "Lai Lai Xiao Long"}, {"time": "13:00–15:00", "zone": "Xintiandi", "name": "Xintiandi", "objective": "Shopping", "note": "Shikumen lanes, shops, cafés", "lat": 31.219, "lng": 121.4745, "short": "Xintiandi"}, {"time": "15:15–16:45", "zone": "Xintiandi / Tianzifang", "name": "Tianzifang", "objective": "Shopping", "note": "⚡ optional — decide on the day. 1.3 km south of Xintiandi; if the family is tired, skip it and stay in Xintiandi (Fei Da Chu dinner is inside Xintiandi, no detour). M alleys, best before dark", "lat": 31.2103, "lng": 121.4715, "short": "Tianzifang", "optional": true}, {"time": "18:00–19:00", "zone": "Xintiandi", "name": "Fei Da Chu (Xintiandi Plaza F4)", "objective": "Eat", "note": "Dinner — Hunan cuisine; book or arrive by 17:45", "lat": 31.2205, "lng": 121.4755, "short": "Fei Da Chu"}, {"time": "19:15–20:30", "zone": "Xintiandi", "name": "Xintiandi at night", "objective": "Sightseeing", "note": "Lanes lit up, café or late drink", "lat": 31.2195, "lng": 121.4735, "short": "Xintiandi (night)"}]}, {"id": 5, "label": "DAY 5", "date": "Nov 15 (Sun)", "theme": "Last laps → airport", "stops": [{"time": "08:30–09:30", "zone": "Hotel / People's Square", "name": "Breakfast near hotel", "objective": "Eat", "note": "Sleep in, easy start", "lat": 31.2345, "lng": 121.477, "short": "Breakfast"}, {"time": "09:30–11:00", "zone": "Hotel / People's Square", "name": "Bakery run near hotel (BSF / Amam)", "objective": "Eat", "note": "Buy take-home pastries", "lat": 31.235, "lng": 121.4785, "short": "Bakery run"}, {"time": "11:30–12:15", "zone": "East Nanjing", "name": "Light lunch (E. Nanjing Rd)", "objective": "Eat", "note": "Any spot on the street", "lat": 31.2355, "lng": 121.481, "short": "Light lunch"}, {"time": "12:45–14:00", "zone": "Airport", "name": "Didi to PVG", "objective": "Travel", "note": "Leave 12:45 — lull before evening rush; 6-seater for 4 + luggage", "lat": 31.1434, "lng": 121.8052, "short": "Didi to PVG", "offmap": true}, {"time": "14:15–15:45", "zone": "Airport", "name": "Check-in + security", "objective": "Travel", "note": "International flight — 2.5h buffer before 17:15", "lat": 31.1434, "lng": 121.8052, "short": "Check-in", "offmap": true}, {"time": "17:15", "zone": "Airport", "name": "Flight takes off", "objective": "Travel", "note": "Safe travels!", "lat": 31.1434, "lng": 121.8052, "short": "Flight 17:15", "offmap": true}]}]}, "relaxed": {"label": "Relaxed plan", "days": [{"id": 1, "label": "DAY 1", "date": "Nov 11 (Wed)", "theme": "Arrival · The Bund at night", "stops": [{"time": "16:45", "zone": "Hotel (Fuzhou Rd)", "name": "Arrive hotel, drop luggage", "objective": "Travel", "note": "BAIhome Hotel, 355 Fuzhou Rd", "lat": 31.234, "lng": 121.4748, "short": "Hotel (drop bags)"}, {"time": "17:00–17:45", "zone": "Guangdong Rd (People's Square area)", "name": "Huxilao Longtang Noodle House (Guangdong Road Branch)", "objective": "Eat", "note": "World Trade Tower, 500 Guangdong Rd (1F) — classic Shanghai noodles; clam pork liver noodles is the signature. ~600 m walk from hotel / East Nanjing Rd metro", "lat": 31.23272, "lng": 121.481988, "short": "Huxilao noodles"}, {"time": "18:00–19:45", "zone": "The Bund", "name": "The Bund promenade (Puxi side)", "objective": "Sightseeing", "note": "Unhurried stroll along the waterfront, view Lujiazui skyline lit up from across the river", "lat": 31.245, "lng": 121.491, "short": "The Bund"}]}, {"id": 2, "label": "DAY 2", "date": "Nov 12 (Thu)", "theme": "West Nanjing → People's Sq → East Nanjing", "stops": [{"time": "10:00–10:45", "zone": "West Nanjing", "name": "Amam Bakery (Kerry Centre)", "objective": "Eat", "note": "Pastries + coffee, opens 10:00", "lat": 31.2285, "lng": 121.447, "short": "Amam Bakery"}, {"time": "11:00–12:30", "zone": "West Nanjing", "name": "West Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Unhurried stroll + shops — quietest part of the day", "lat": 31.2345, "lng": 121.465, "short": "West Nanjing Rd"}, {"time": "12:30–13:30", "zone": "West Nanjing", "name": "Xie San Bao (74 Nanhui Rd)", "objective": "Eat", "note": "Lunch — crab dishes, Nov is peak crab season", "lat": 31.2368, "lng": 121.4595, "short": "Xie San Bao"}, {"time": "14:00–16:00", "zone": "People's Square / West Nanjing", "name": "People's Square + Shanghai IFC", "objective": "Shopping", "note": "2h combined — square first (monument, fountains, photos), then IFC mall (3-min walk): fashion, cosmetics, accessories", "lat": 31.2296, "lng": 121.472, "short": "People's Sq + IFC"}, {"time": "16:00–17:30", "zone": "East Nanjing", "name": "East Nanjing Rd pedestrian street", "objective": "Shopping", "note": "Shops open till 22:00, livelier in the evening", "lat": 31.2355, "lng": 121.483, "short": "East Nanjing Rd"}, {"time": "18:30–19:30", "zone": "Jing'an (818 Plaza)", "name": "Long Time Ago (818 Plaza B1)", "objective": "Eat", "note": "Dinner — Xinjiang lamb skewers, night-market vibe. 818 Plaza B1, 818 W. Nanjing Rd (Jing'an) — ~¥97/person, 4.8★; open 11:00–14:00 & 16:30–00:00; Didi from hotel", "lat": 31.23102, "lng": 121.460984, "short": "Long Time Ago"}]}, {"id": 3, "label": "DAY 3", "date": "Nov 13 (Fri)", "theme": "Jing'an → Anfu → Huaihai", "stops": [{"time": "09:00–11:00", "zone": "Jing'an Temple", "name": "Jing'an Temple + Park", "objective": "Sightseeing", "note": "Full 2h — temple + adjacent park in one relaxed block; go early before it fills", "lat": 31.2235, "lng": 121.445, "short": "Jing'an Temple + Park"}, {"time": "12:00–13:00", "zone": "West Nanjing (People's Square)", "name": "Rged Ground Beef & Rice (Raffles City 6F)", "objective": "Eat", "note": "MUST-GO — Japanese hamburg-steak rice (肉肉大米); signature cheese hamburg steak. 6F Raffles City 人广来福士, 327 W. Nanjing Rd, People's Square (metro Exit 15); daily 11:00–21:30. ~500 m from hotel", "lat": 31.2345, "lng": 121.4685, "short": "Rged (Raffles City)"}, {"time": "13:30–14:45", "zone": "Anfu Road", "name": "13DE MARZO + Anfu Rd stroll", "objective": "Eat", "note": "Viral teddy-bear café (322 Anfu Rd, bear on every drink, closes 18:00, no seating), then stroll the trendy street", "lat": 31.2133, "lng": 121.4401, "short": "13DE MARZO + Anfu"}, {"time": "15:00–17:00", "zone": "FFC", "name": "Huaihai Middle Rd", "objective": "Shopping", "note": "2h of shops, cafés & bakeries — BSF Pastry pork-floss buns included; walk east", "lat": 31.2178, "lng": 121.459, "short": "Huaihai Rd"}, {"time": "18:30–19:30", "zone": "Joy City (Qufu Rd)", "name": "Grandma's Home 外婆家 (Joy City 7F)", "objective": "Eat", "note": "MUST-GO — Jiangsu-Zhejiang cuisine, family-friendly. 180 Qufu Rd, Joy City South Tower 7F, by Qufu Rd metro Exit 1", "lat": 31.242849, "lng": 121.47187, "short": "Grandma's Home (Joy City)"}]}, {"id": 4, "label": "DAY 4", "date": "Nov 14 (Sat)", "theme": "Yu Garden → Xintiandi", "stops": [{"time": "09:00–11:30", "zone": "Yu Garden", "name": "Yu Garden + City God Temple", "objective": "Sightseeing", "note": "MUST-GO — full 2.5h, morning = fewer crowds; ~15 min Didi from hotel", "lat": 31.2256, "lng": 121.4922, "short": "Yu Garden"}, {"time": "12:00–13:00", "zone": "Old Town / Yu Garden", "name": "Lai Lai Xiao Long (504 Tianjin Rd)", "objective": "Eat", "note": "Lunch — crab-roe xiaolongbao, queue likely, arrive by 12:00", "lat": 31.2385, "lng": 121.4845, "short": "Lai Lai Xiao Long"}, {"time": "13:30–16:00", "zone": "Xintiandi", "name": "Xintiandi", "objective": "Shopping", "note": "2.5h — shikumen lanes, shops, cafés", "lat": 31.219, "lng": 121.4745, "short": "Xintiandi"}, {"time": "18:30–19:30", "zone": "Xintiandi", "name": "Fei Da Chu (Xintiandi Plaza F4)", "objective": "Eat", "note": "Dinner — Hunan cuisine; inside the Xintiandi complex (Xintiandi Plaza F4, Madang Rd) — no detour. Book or arrive by 18:00", "lat": 31.2205, "lng": 121.4755, "short": "Fei Da Chu"}, {"time": "19:45–20:45", "zone": "Xintiandi", "name": "Xintiandi at night", "objective": "Sightseeing", "note": "Lanes lit up, café or late drink", "lat": 31.2195, "lng": 121.4735, "short": "Xintiandi (night)"}]}, {"id": 5, "label": "DAY 5", "date": "Nov 15 (Sun)", "theme": "Last laps → airport", "stops": [{"time": "08:30–09:30", "zone": "Hotel / People's Square", "name": "Breakfast near hotel", "objective": "Eat", "note": "Sleep in, easy start", "lat": 31.2345, "lng": 121.477, "short": "Breakfast"}, {"time": "09:30–11:00", "zone": "Hotel / People's Square", "name": "Bakery run near hotel (BSF / Amam)", "objective": "Eat", "note": "Buy take-home pastries", "lat": 31.235, "lng": 121.4785, "short": "Bakery run"}, {"time": "11:30–12:15", "zone": "East Nanjing", "name": "Light lunch (E. Nanjing Rd)", "objective": "Eat", "note": "Any spot on the street", "lat": 31.2355, "lng": 121.481, "short": "Light lunch"}, {"time": "12:45–14:00", "zone": "Airport", "name": "Didi to PVG", "objective": "Travel", "note": "Leave 12:45 — lull before evening rush; 6-seater for 4 + luggage", "lat": 31.1434, "lng": 121.8052, "short": "Didi to PVG", "offmap": true}, {"time": "14:15–15:45", "zone": "Airport", "name": "Check-in + security", "objective": "Travel", "note": "International flight — 2.5h buffer before 17:15", "lat": 31.1434, "lng": 121.8052, "short": "Check-in", "offmap": true}, {"time": "17:15", "zone": "Airport", "name": "Flight takes off", "objective": "Travel", "note": "Safe travels!", "lat": 31.1434, "lng": 121.8052, "short": "Flight 17:15", "offmap": true}]}]}}};
+let currentPlan = 'main';
+function days() { return DATA.plans[currentPlan].days; };
 const BACKUP_BRANCHES = [
   { name: "Long Time Ago (830 E. Nanjing Rd)", short: "Long Time Ago (E. Nanjing Rd)", lat: 31.2348, lng: 121.4895, main: "Long Time Ago (818 Plaza B1)", note: "Branch swap \u2014 same food, different queue", label: "above" },
   { name: "Rged (Jiuguang, 189 W. Nanjing Rd)", short: "Rged (Jiuguang)", lat: 31.2305, lng: 121.4585, main: "Rged Ground Beef & Rice (Raffles City 6F)", note: "Branch swap \u2014 same food, different queue", label: "below" }
 ];
-const BACKUPS = {
-  "Huxilao Longtang Noodle House (Guangdong Road Branch)": [
-    { name: "Lai Lai Xiao Long", day: "D4 lunch", dist: "0.7 km" },
-    { name: "Long Time Ago (818 Plaza B1)", day: "D2", dist: "2.0 km", branch: true },
-    { name: "Rged", day: "D3 lunch", dist: "1.3 km" },
-    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.5 km" },
-    { name: "Fei Da Chu", day: "D4 dinner", dist: "1.5 km" }
-  ],
-  "Xie San Bao (74 Nanhui Rd)": [
-    { name: "Rged", day: "D3 lunch", dist: "0.9 km" },
-    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.4 km" }
-  ],
-  "Long Time Ago (818 Plaza B1)": [
-    { name: "Long Time Ago (830 E. Nanjing Rd)", day: "D2", dist: "2.7 km", branch: true },
-    { name: "Rged", day: "D3 lunch", dist: "0.8 km" },
-    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.7 km" },
-    { name: "Fei Da Chu", day: "D4 dinner", dist: "1.8 km" },
-    { name: "Huxilao", day: "D1", dist: "2.0 km" }
-  ],
-  "Rged Ground Beef & Rice (Raffles City 6F)": [
-    { name: "Rged (Jiuguang, 189 W. Nanjing Rd)", day: "D3", dist: "1.1 km", branch: true },
-    { name: "Long Time Ago (818 Plaza B1)", day: "D2", dist: "0.8 km", branch: true },
-    { name: "Xie San Bao", day: "D2 lunch", dist: "0.9 km" },
-    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.0 km" },
-    { name: "Huxilao", day: "D1", dist: "1.3 km" },
-    { name: "Lai Lai Xiao Long", day: "D4 lunch", dist: "1.6 km" },
-    { name: "Fei Da Chu", day: "D4 dinner", dist: "1.7 km" }
-  ],
-  "Grandma's Home \u5916\u5a46\u5bb6 (Joy City 7F)": [
-    { name: "Rged", day: "D3 lunch", dist: "1.0 km" },
-    { name: "Lai Lai Xiao Long", day: "D4 lunch", dist: "1.3 km" },
-    { name: "Xie San Bao", day: "D2 lunch", dist: "1.4 km" },
-    { name: "Huxilao", day: "D1", dist: "1.5 km" },
-    { name: "Long Time Ago (818 Plaza B1)", day: "D2", dist: "1.7 km", branch: true }
-  ],
-  "Lai Lai Xiao Long (504 Tianjin Rd)": [
-    { name: "Huxilao", day: "D1", dist: "0.7 km" },
-    { name: "Grandma's Home (Joy City)", day: "D3 dinner", dist: "1.3 km" },
-    { name: "Rged", day: "D3 lunch", dist: "1.6 km" }
-  ],
-  "Fei Da Chu (Xintiandi Plaza F4)": [
-    { name: "Huxilao", day: "D1", dist: "1.5 km" },
-    { name: "Rged", day: "D3 lunch", dist: "1.7 km" },
-    { name: "Long Time Ago (818 Plaza B1)", day: "D2", dist: "1.8 km", branch: true },
-    { name: "Rged (Jiuguang, 189 W. Nanjing Rd)", day: "D3", dist: "2.0 km", branch: true }
-  ]
-};
+const BACKUPS = {"Huxilao Longtang Noodle House (Guangdong Road Branch)": [{"name": "Lai Lai Xiao Long", "day": "D4 lunch", "dist": "0.7 km"}, {"name": "Long Time Ago (830 E. Nanjing Rd)", "day": "D2", "dist": "0.8 km", "branch": true}, {"name": "Rged", "day": "D3 lunch", "dist": "1.3 km"}, {"name": "Grandma's Home (Joy City)", "day": "D3 dinner", "dist": "1.5 km"}, {"name": "Fei Da Chu", "day": "D4 dinner", "dist": "1.5 km"}, {"name": "Long Time Ago (818 Plaza B1)", "day": "D2 dinner", "dist": "2.0 km"}, {"name": "Xie San Bao", "day": "D2 lunch", "dist": "2.2 km"}, {"name": "Rged (Jiuguang, 189 W. Nanjing Rd)", "day": "D3", "dist": "2.2 km", "branch": true}], "Xie San Bao (74 Nanhui Rd)": [{"name": "Long Time Ago (818 Plaza B1)", "day": "D2 dinner", "dist": "0.7 km"}, {"name": "Rged (Jiuguang, 189 W. Nanjing Rd)", "day": "D3", "dist": "0.7 km", "branch": true}, {"name": "Rged", "day": "D3 lunch", "dist": "0.9 km"}, {"name": "Grandma's Home (Joy City)", "day": "D3 dinner", "dist": "1.4 km"}, {"name": "Huxilao", "day": "D1", "dist": "2.2 km"}, {"name": "Fei Da Chu", "day": "D4 dinner", "dist": "2.4 km"}, {"name": "Lai Lai Xiao Long", "day": "D4 lunch", "dist": "2.4 km"}, {"name": "Long Time Ago (830 E. Nanjing Rd)", "day": "D2", "dist": "2.9 km", "branch": true}], "Long Time Ago (818 Plaza B1)": [{"name": "Rged (Jiuguang, 189 W. Nanjing Rd)", "day": "D3", "dist": "0.2 km", "branch": true}, {"name": "Xie San Bao", "day": "D2 lunch", "dist": "0.7 km"}, {"name": "Rged", "day": "D3 lunch", "dist": "0.8 km"}, {"name": "Grandma's Home (Joy City)", "day": "D3 dinner", "dist": "1.7 km"}, {"name": "Fei Da Chu", "day": "D4 dinner", "dist": "1.8 km"}, {"name": "Huxilao", "day": "D1", "dist": "2.0 km"}, {"name": "Lai Lai Xiao Long", "day": "D4 lunch", "dist": "2.4 km"}], "Rged Ground Beef & Rice (Raffles City 6F)": [{"name": "Long Time Ago (818 Plaza B1)", "day": "D2 dinner", "dist": "0.8 km"}, {"name": "Xie San Bao", "day": "D2 lunch", "dist": "0.9 km"}, {"name": "Grandma's Home (Joy City)", "day": "D3 dinner", "dist": "1.0 km"}, {"name": "Huxilao", "day": "D1", "dist": "1.3 km"}, {"name": "Lai Lai Xiao Long", "day": "D4 lunch", "dist": "1.6 km"}, {"name": "Fei Da Chu", "day": "D4 dinner", "dist": "1.7 km"}, {"name": "Long Time Ago (830 E. Nanjing Rd)", "day": "D2", "dist": "2.0 km", "branch": true}], "Grandma's Home 外婆家 (Joy City 7F)": [{"name": "Rged", "day": "D3 lunch", "dist": "1.0 km"}, {"name": "Lai Lai Xiao Long", "day": "D4 lunch", "dist": "1.3 km"}, {"name": "Xie San Bao", "day": "D2 lunch", "dist": "1.4 km"}, {"name": "Huxilao", "day": "D1", "dist": "1.5 km"}, {"name": "Long Time Ago (818 Plaza B1)", "day": "D2 dinner", "dist": "1.7 km"}, {"name": "Rged (Jiuguang, 189 W. Nanjing Rd)", "day": "D3", "dist": "1.9 km", "branch": true}, {"name": "Long Time Ago (830 E. Nanjing Rd)", "day": "D2", "dist": "1.9 km", "branch": true}, {"name": "Fei Da Chu", "day": "D4 dinner", "dist": "2.5 km"}], "Lai Lai Xiao Long (504 Tianjin Rd)": [{"name": "Long Time Ago (830 E. Nanjing Rd)", "day": "D2", "dist": "0.6 km", "branch": true}, {"name": "Huxilao", "day": "D1", "dist": "0.7 km"}, {"name": "Grandma's Home (Joy City)", "day": "D3 dinner", "dist": "1.3 km"}, {"name": "Rged", "day": "D3 lunch", "dist": "1.6 km"}, {"name": "Fei Da Chu", "day": "D4 dinner", "dist": "2.2 km"}, {"name": "Xie San Bao", "day": "D2 lunch", "dist": "2.4 km"}, {"name": "Long Time Ago (818 Plaza B1)", "day": "D2 dinner", "dist": "2.4 km"}, {"name": "Rged (Jiuguang, 189 W. Nanjing Rd)", "day": "D3", "dist": "2.6 km", "branch": true}], "Fei Da Chu (Xintiandi Plaza F4)": [{"name": "Huxilao", "day": "D1", "dist": "1.5 km"}, {"name": "Rged", "day": "D3 lunch", "dist": "1.7 km"}, {"name": "Long Time Ago (818 Plaza B1)", "day": "D2 dinner", "dist": "1.8 km"}, {"name": "Rged (Jiuguang, 189 W. Nanjing Rd)", "day": "D3", "dist": "2.0 km", "branch": true}, {"name": "Long Time Ago (830 E. Nanjing Rd)", "day": "D2", "dist": "2.1 km", "branch": true}, {"name": "Lai Lai Xiao Long", "day": "D4 lunch", "dist": "2.2 km"}, {"name": "Xie San Bao", "day": "D2 lunch", "dist": "2.4 km"}, {"name": "Grandma's Home (Joy City)", "day": "D3 dinner", "dist": "2.5 km"}]};
 function backupsFor(name) { return BACKUPS[name] || null; }
 function findStop(name) {
-  for (const d of DATA.days) for (const s of d.stops) if (s.name === name) return s;
+  for (const d of days()) for (const s of d.stops) if (s.name === name) return s;
   return null;
 }
 function backupListHTML(name) {
@@ -353,7 +322,7 @@ function getStops(day) {
 
 function drawAllDays() {
   allDaysLayer.innerHTML = '';
-  DATA.days.forEach((day, di) => {
+  days().forEach((day, di) => {
     const color = DAY_COLORS[di];
     const stops = getStops(day);
     for (let i = 0; i < stops.length - 1; i++) {
@@ -524,9 +493,38 @@ document.getElementById('timeline').addEventListener('click', function(e) {
 });
 
 /* ---------- tabs ---------- */
+/* ---------- plan tabs (main / relaxed) ---------- */
+function buildPlanTabs() {
+  const ptabs = document.getElementById('planTabs');
+  ptabs.innerHTML = '';
+  Object.keys(DATA.plans).forEach(key => {
+    const b = document.createElement('button');
+    b.className = 'plan-tab' + (key === currentPlan ? ' active' : '');
+    b.dataset.plan = key;
+    b.textContent = DATA.plans[key].label;
+    b.addEventListener('click', () => selectPlan(key));
+    ptabs.appendChild(b);
+  });
+}
+function selectPlan(key) {
+  currentPlan = key;
+  document.querySelectorAll('.plan-tab').forEach(t => t.classList.toggle('active', t.dataset.plan === key));
+  const activeDay = +document.querySelector('.tab.active').dataset.id;
+  const day = days().find(d => d.id === activeDay);
+  drawAllDays();
+  drawSelected(day);
+  renderTimeline(day);
+  drawBackupBranches();
+  if (realMap && document.getElementById('realMap').style.display !== 'none') drawRealMap(day);
+  const parts = (hideEat ? day.stops.filter(s => s.objective !== 'Eat') : day.stops).map(s => s.short);
+  document.getElementById('summary').innerHTML =
+    '<span class="slabel">' + day.label + ' ROUTE</span> ' +
+    parts.join(' <span class="arrow">\u2192</span> ');
+}
+
 function buildTabs() {
   const tabs = document.getElementById('tabs');
-  DATA.days.forEach(d => {
+  days().forEach(d => {
     const b = document.createElement('button');
     b.className = 'tab';
     b.dataset.id = d.id;
@@ -537,7 +535,7 @@ function buildTabs() {
 }
 
 function selectDay(id) {
-  const day = DATA.days.find(d => d.id === id);
+  const day = days().find(d => d.id === id);
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', +t.dataset.id === id));
   drawSelected(day);
   renderTimeline(day);
@@ -625,7 +623,7 @@ function switchMapView(mode) {
     document.getElementById('viewReal').classList.add('active');
     if (!realMap) initRealMap();
     realMap.invalidateSize();
-    const day = DATA.days.find(d => +document.querySelector('.tab.active').dataset.id === d.id);
+    const day = days().find(d => +document.querySelector('.tab.active').dataset.id === d.id);
     drawRealMap(day);
   } else {
     realEl.style.display = 'none';
@@ -708,7 +706,7 @@ document.getElementById('toggleEat').addEventListener('click', function() {
   hideEat = !hideEat;
   this.classList.toggle('active', hideEat);
   this.textContent = hideEat ? 'Show restaurants' : 'Hide restaurants';
-  const day = DATA.days.find(d => +document.querySelector('.tab.active').dataset.id === d.id);
+  const day = days().find(d => +document.querySelector('.tab.active').dataset.id === d.id);
   drawAllDays();
   drawSelected(day);
   renderTimeline(day);
@@ -728,6 +726,7 @@ buildBase();
 initLayers();
 buildHotel();
 drawAllDays();
+buildPlanTabs();
 buildTabs();
 selectDay(1);
 drawBackupBranches();
